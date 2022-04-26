@@ -1,8 +1,13 @@
 package ru.duzhinsky.preorderbot.bot;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
+import org.telegram.abilitybots.api.objects.Ability;
+import org.telegram.abilitybots.api.objects.Privacy;
 import org.telegram.abilitybots.api.toggle.BareboneToggle;
 import ru.duzhinsky.preorderbot.data.Config;
+
+import static org.telegram.abilitybots.api.objects.Locality.USER;
+import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 public class TelegramAbilityBot extends AbilityBot {
     private static final String BOT_TOKEN;
@@ -18,6 +23,17 @@ public class TelegramAbilityBot extends AbilityBot {
 
     public TelegramAbilityBot() {
         super(BOT_TOKEN, BOT_USERNAME, toggle);
+    }
+
+    public Ability start() {
+        // TODO add start action (register/login user)
+        return Ability.builder()
+                .name("start")
+                .input(0)
+                .locality(USER)
+                .privacy(Privacy.PUBLIC)
+                .action(ctx -> silent.send("Hello there!", ctx.chatId()))
+                .build();
     }
 
     @Override
