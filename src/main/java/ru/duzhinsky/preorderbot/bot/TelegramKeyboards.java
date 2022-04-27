@@ -18,4 +18,13 @@ public class TelegramKeyboards {
         markup.setKeyboard(List.of(List.of(loginButton), List.of(registerButton)));
         return markup;
     }
+
+    public static InlineKeyboardMarkup backButton(String data) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton backButton = new InlineKeyboardButton();
+        backButton.setText("Назад");
+        backButton.setCallbackData(data);
+        markup.setKeyboard(List.of(List.of(backButton)));
+        return markup;
+    }
 }
