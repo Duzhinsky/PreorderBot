@@ -9,18 +9,22 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.duzhinsky.preorderbot.data.Config;
-import ru.duzhinsky.preorderbot.db.UserDB;
+import ru.duzhinsky.preorderbot.db.MySQLDAOFactory;
 import ru.duzhinsky.preorderbot.db.UserDao;
 import ru.duzhinsky.preorderbot.objects.User;
 import ru.duzhinsky.preorderbot.utils.PhoneValidator;
 
+import java.sql.SQLException;
 import java.util.function.BiConsumer;
+import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 public class TelegramAbilityBot extends AbilityBot {
     private static final String BOT_TOKEN;
     private static final String BOT_USERNAME;
     private static final long   CREATOR_ID;
     private static final BareboneToggle toggle = new BareboneToggle();
+
+    private final UserDao userDao;
 
     static {
         BOT_TOKEN = Config.getProperty("token","");
@@ -33,13 +37,14 @@ public class TelegramAbilityBot extends AbilityBot {
         return CREATOR_ID;
     }
 
-    public TelegramAbilityBot() {
+    public TelegramAbilityBot() throws SQLException {
         super(BOT_TOKEN, BOT_USERNAME, toggle);
+        userDao = MySQLDAOFactory.getUserDao();
     }
 
     public ReplyFlow start() {
         return ReplyFlow.builder(db)
-                .action((bot,upd) -> silent.send("Приветствие в начале", upd.getMessage().getChatId()))
+                .action((bot,upd) -> silent.send("Приветствие в начале", getChatId(upd)))
                 .onlyIf(Flag.MESSAGE)
                 .onlyIf(upd->upd.getMessage().getText().equals("/start"))
                 .next(auth())
@@ -48,19 +53,16 @@ public class TelegramAbilityBot extends AbilityBot {
     }
 
     private ReplyFlow auth() {
-        BiConsumer<BaseAbilityBot, Update> action = getAuthAction();
         return ReplyFlow.builder(db)
-                .action(action)
+                .action(getAuthAction())
                 .onlyIf(Flag.MESSAGE)
                 .onlyIf(upd -> !isUserPresent(upd.getMessage().getChat().getUserName()))
-                .next(loginFlow())
-                .next(registerFlow())
                 .build();
     }
 
     private BiConsumer<BaseAbilityBot, Update> getAuthAction() {
         return (bot, upd) -> {
-            Long chatId = upd.getMessage().getChatId();
+            Long chatId = getChatId(upd);
             SendMessage sendKeyboard = new SendMessage();
             sendKeyboard.setText("Похоже, вы используете телеграм бот для заказа впервые\nЕсли вы уже пользовались нашими сервисами, войдите по номеру телефона");
             sendKeyboard.setChatId(chatId.toString());
@@ -74,18 +76,14 @@ public class TelegramAbilityBot extends AbilityBot {
     }
 
     private boolean isUserPresent(String username) {
-        try(UserDao userDao = new UserDB()) {
-            var userOpt = userDao.getUser(User.fromTgUsername(username));
-            return userOpt.isPresent();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        var userOpt = userDao.getUserByTgUsername(username);
+        System.out.println(userOpt);
+        return userOpt.isPresent();
     }
 
-    private ReplyFlow loginFlow() {
+    public ReplyFlow loginFlow() {
         BiConsumer<BaseAbilityBot, Update> action = (bot, upd) -> {
-            Long chatId = upd.getCallbackQuery().getMessage().getChatId();
+            Long chatId = getChatId(upd);
             silent.send("login", chatId);
         };
         return ReplyFlow.builder(db)
@@ -95,9 +93,15 @@ public class TelegramAbilityBot extends AbilityBot {
                 .build();
     }
 
-    private ReplyFlow registerFlow() {
+    public ReplyFlow registerFlow() {
         BiConsumer<BaseAbilityBot, Update> action = (bot, upd) -> {
-            Long chatId = upd.getCallbackQuery().getMessage().getChatId();
+            Long chatId = getChatId(upd);
+            Integer sourceMessage = upd.hasMessage() ?
+                    upd.getMessage().getMessageId() : (
+                            upd.hasCallbackQuery() ?
+                                    upd.getCallbackQuery().getMessage().getMessageId() : 0
+                    );
+            deleteMessage(sourceMessage, chatId);
             SendMessage message = new SendMessage();
             message.setChatId(chatId.toString());
             message.setText("Введите номер телефона, который будет использоваться для входа");
@@ -123,31 +127,25 @@ public class TelegramAbilityBot extends AbilityBot {
         };
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.MESSAGE)
-                .onlyIf(update -> {
-                    String input = update.getMessage().getText();
+                .onlyIf(upd -> {
+                    String input = upd.getMessage().getText();
                     if(PhoneValidator.validate(PhoneValidator.prepare(input)))
                         return true;
-                    SendMessage message = new SendMessage();
-                    message.setChatId(update.getMessage().getChatId().toString());
-                    message.setText("Неправильный формат телефона! Попробуйте еще!");
-                    message.setReplyMarkup(TelegramKeyboards.backButton("BACK_TO_AUTH"));
-                    try {
-                        execute(message);
-                    } catch (TelegramApiException e) {
-                        e.printStackTrace();
-                    }
+                    silent.send("Неправильный формат телефона, попробуйте еще", getChatId(upd));
                     return false;
                 })
                 .action(action)
-//                .next(backToAuth())
                 .build();
     }
 
     public ReplyFlow backToAuth() {
         return ReplyFlow.builder(db)
-                .action((bot,upd) -> silent.send("stupid", upd.getMessage().getChatId()))
-                .onlyIf(Update::hasCallbackQuery)
-                .onlyIf(update -> update.getCallbackQuery().getData().equals("BACK_TO_AUTH"))
+                .action((bot,upd) -> {
+                    deleteMessage(upd.getCallbackQuery().getMessage().getMessageId(), getChatId(upd));
+                    getAuthAction().accept(bot,upd);
+                })
+                .onlyIf(Flag.CALLBACK_QUERY)
+                .onlyIf(upd -> upd.getCallbackQuery().getData().equals("BACK_TO_AUTH"))
                 .build();
     }
 
@@ -161,5 +159,4 @@ public class TelegramAbilityBot extends AbilityBot {
             e.printStackTrace();
         }
     }
-
 }
