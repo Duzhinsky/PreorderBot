@@ -20,8 +20,4 @@ public class Database {
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url,user,password);
     }
-
-    public static int executeUpdate(Connection connection, String query) throws SQLException {
-        return connection.createStatement().executeUpdate(query);
-    }
 }

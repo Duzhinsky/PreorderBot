@@ -6,16 +6,6 @@ import java.sql.*;
 import java.util.Optional;
 
 public class UserDB implements UserDao {
-    private final Connection connection;
-
-    public UserDB() throws SQLException {
-        this.connection = Database.getConnection();
-    }
-
-    @Override
-    public void close() throws SQLException {
-        connection.close();
-    }
 
     @Override
     public void addUser(User user) {
@@ -35,6 +25,7 @@ public class UserDB implements UserDao {
         query += " LIMIT 1;";
 
         try {
+            Connection connection = Database.getConnection();
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(query);
             if(rs.next())
