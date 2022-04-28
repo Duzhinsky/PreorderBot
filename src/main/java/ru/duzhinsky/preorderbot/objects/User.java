@@ -11,18 +11,6 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public static User fromId(int id) {
-        return new User(id, "", "");
-    }
-
-    public static User fromTgUsername(String tgUsername) {
-        return new User(0, tgUsername, "");
-    }
-
-    public static User fromPhoneNumber(String phoneNumber) {
-        return new User(0, "", phoneNumber);
-    }
-
     public int getId() {
         return id;
     }

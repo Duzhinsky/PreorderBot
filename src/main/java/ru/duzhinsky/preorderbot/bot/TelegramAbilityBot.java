@@ -9,11 +9,12 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.duzhinsky.preorderbot.data.Config;
-import ru.duzhinsky.preorderbot.db.UserDB;
+import ru.duzhinsky.preorderbot.db.MySQLDAOFactory;
 import ru.duzhinsky.preorderbot.db.UserDao;
 import ru.duzhinsky.preorderbot.objects.User;
 import ru.duzhinsky.preorderbot.utils.PhoneValidator;
 
+import java.sql.SQLException;
 import java.util.function.BiConsumer;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
@@ -22,6 +23,8 @@ public class TelegramAbilityBot extends AbilityBot {
     private static final String BOT_USERNAME;
     private static final long   CREATOR_ID;
     private static final BareboneToggle toggle = new BareboneToggle();
+
+    private final UserDao userDao;
 
     static {
         BOT_TOKEN = Config.getProperty("token","");
@@ -34,8 +37,9 @@ public class TelegramAbilityBot extends AbilityBot {
         return CREATOR_ID;
     }
 
-    public TelegramAbilityBot() {
+    public TelegramAbilityBot() throws SQLException {
         super(BOT_TOKEN, BOT_USERNAME, toggle);
+        userDao = MySQLDAOFactory.getUserDao();
     }
 
     public ReplyFlow start() {
@@ -72,8 +76,8 @@ public class TelegramAbilityBot extends AbilityBot {
     }
 
     private boolean isUserPresent(String username) {
-        UserDao userDao = new UserDB();
-        var userOpt = userDao.getUser(User.fromTgUsername(username));
+        var userOpt = userDao.getUserByTgUsername(username);
+        System.out.println(userOpt);
         return userOpt.isPresent();
     }
 
