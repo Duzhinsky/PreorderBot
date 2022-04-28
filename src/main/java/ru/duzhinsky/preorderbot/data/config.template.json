@@ -1,5 +1,8 @@
 {
   "token": "<token>",
   "username": "@bot",
-  "creatorId": 0
+  "creatorId": 0,
+  "dbUrl": "jdbc:",
+  "dbUser": "user",
+  "dbPass": "pass"
 }
