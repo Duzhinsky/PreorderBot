@@ -10,11 +10,11 @@ public class PhoneValidator {
             else if(Character.isDigit(ch))
                 sb.append(input.charAt(i));
         }
-        return "+"+sb;
+        return sb.toString();
     }
 
     public static boolean validate(String input) {
-        String regex = "\\+7\\d{10}";
+        String regex = "7\\d{10}";
         return input.matches(regex);
     }
 }
