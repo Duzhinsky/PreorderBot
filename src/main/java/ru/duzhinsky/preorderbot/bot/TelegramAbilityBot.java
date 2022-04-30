@@ -2,6 +2,7 @@ package ru.duzhinsky.preorderbot.bot;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.bot.BaseAbilityBot;
+
 import org.telegram.abilitybots.api.objects.*;
 import org.telegram.abilitybots.api.toggle.BareboneToggle;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -52,10 +53,15 @@ public class TelegramAbilityBot extends AbilityBot {
                 .onlyIf(upd->"/start".equals(upd.getMessage().getText()))
                 .action((bot,upd) -> {
                     silent.send("Приветствие в начале", getChatId(upd));
-                    isUserRegistered.put(
-                            getChatId(upd),
-                            userDao.isUserPresentByTgUsername(upd.getMessage().getChat().getUserName())
-                    );
+                    try {
+                        isUserRegistered.put(
+                                getChatId(upd),
+                                userDao.isUserPresentByTgUsername(upd.getMessage().getChat().getUserName())
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        sendErrorMessage(upd);
+                    }
                 })
                 .next(authFlow())
                 .next(mainFlow())
@@ -121,8 +127,13 @@ public class TelegramAbilityBot extends AbilityBot {
         BiConsumer<BaseAbilityBot, Update> action = (bot,upd) -> {
             String input = upd.getMessage().getText();
             String phone = PhoneValidator.prepare(input);
-            userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
-            isUserRegistered.put(getChatId(upd), true);
+            try {
+                userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
+                isUserRegistered.put(getChatId(upd), true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendErrorMessage(upd);
+            }
         };
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.MESSAGE)
@@ -166,9 +177,14 @@ public class TelegramAbilityBot extends AbilityBot {
         BiConsumer<BaseAbilityBot, Update> action = (bot,upd) -> {
             String input = upd.getMessage().getText();
             String phone = PhoneValidator.prepare(input);
-            userDao.addUser(phone);
-            userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
-            isUserRegistered.put(getChatId(upd), true);
+            try {
+                userDao.addUser(phone);
+                userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
+                isUserRegistered.put(getChatId(upd), true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendErrorMessage(upd);
+            }
         };
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.MESSAGE)
@@ -235,7 +251,17 @@ public class TelegramAbilityBot extends AbilityBot {
         return upd -> {
             String input = upd.getMessage().getText();
             String phone = PhoneValidator.prepare(input);
-            return userDao.getUserByPhone(phone).isPresent();
+            try {
+                return userDao.getUserByPhone(phone).isPresent();
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendErrorMessage(upd);
+                return false;
+            }
         };
+    }
+
+    private void sendErrorMessage(Update upd) {
+        silent.send("Произошла ошибка при выполнении запроса. Пожалуйста, повторите попытку позже", getChatId(upd));
     }
 }
