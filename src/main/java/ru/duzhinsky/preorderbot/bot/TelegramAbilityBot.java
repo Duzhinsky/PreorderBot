@@ -99,12 +99,43 @@ public class TelegramAbilityBot extends AbilityBot {
             Long chatId = getChatId(upd);
             Integer sourceMessage = getSourceMessageId(upd);
             deleteMessage(sourceMessage, chatId);
-            silent.send("login", chatId);
+            SendMessage message = new SendMessage();
+            message.setChatId(chatId.toString());
+            message.setText("Введите номер телефона");
+            message.setReplyMarkup(TelegramKeyboards.backButton("BACK_TO_AUTH"));
+            try {
+                execute(message);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
         };
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.CALLBACK_QUERY)
                 .onlyIf(upd -> upd.getCallbackQuery().getData().equals("LOGIN_BUTTON"))
                 .action(action)
+                .next(loginFlow())
+                .build();
+    }
+
+    private ReplyFlow loginFlow() {
+        BiConsumer<BaseAbilityBot, Update> action = (bot,upd) -> {
+            String input = upd.getMessage().getText();
+            String phone = PhoneValidator.prepare(input);
+            userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
+            isUserRegistered.put(getChatId(upd), true);
+        };
+        return ReplyFlow.builder(db)
+                .onlyIf(Flag.MESSAGE)
+                .onlyIf(phoneValidator())
+                .onlyIf(upd -> {
+                    if(!isPhoneRegistered().test(upd)) {
+                        silent.send("Пользователь с таким номером не найден", getChatId(upd));
+                        return false;
+                    }
+                    return true;
+                })
+                .action(action)
+                .next(mainFlow())
                 .build();
     }
 
@@ -129,7 +160,6 @@ public class TelegramAbilityBot extends AbilityBot {
                 .action(action)
                 .next(registrate())
                 .build();
-
     }
 
     private ReplyFlow registrate() {
@@ -142,15 +172,10 @@ public class TelegramAbilityBot extends AbilityBot {
         };
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.MESSAGE)
+                .onlyIf(phoneValidator())
                 .onlyIf(upd -> {
-                    String input = upd.getMessage().getText();
-                    String phone = PhoneValidator.prepare(input);
-                    if(!PhoneValidator.validate(phone)) {
-                        silent.send("Неправильный формат телефона, попробуйте еще", getChatId(upd));
-                        return false;
-                    }
-                    if(userDao.getUserByPhone(phone).isPresent()) {
-                        silent.send("Пользователь с таким номером уже существует!", getChatId(upd));
+                    if(isPhoneRegistered().test(upd)) {
+                        silent.send("Пользователь с таким номером уже зарегестрирован", getChatId(upd));
                         return false;
                     }
                     return true;
@@ -192,5 +217,25 @@ public class TelegramAbilityBot extends AbilityBot {
 
     private Predicate<Update> isUserRegisteredByUpdate() {
         return upd -> isUserRegistered.get(getChatId(upd));
+    }
+
+    private Predicate<Update> phoneValidator() {
+        return upd -> {
+            String input = upd.getMessage().getText();
+            String phone = PhoneValidator.prepare(input);
+            if(!PhoneValidator.validate(phone)) {
+                silent.send("Неправильный формат телефона, попробуйте еще", getChatId(upd));
+                return false;
+            }
+            return true;
+        };
+    }
+
+    private Predicate<Update> isPhoneRegistered() {
+        return upd -> {
+            String input = upd.getMessage().getText();
+            String phone = PhoneValidator.prepare(input);
+            return userDao.getUserByPhone(phone).isPresent();
+        };
     }
 }
