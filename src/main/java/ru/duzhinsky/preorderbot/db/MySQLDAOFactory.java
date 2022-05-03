@@ -24,4 +24,9 @@ public class MySQLDAOFactory {
         if(connectionPool == null) throw new SQLException("Connection pool was not instantiated");
         return new UserDaoMySQL(connectionPool.getConnection());
     }
+
+    public static AuthenticationDAO getAuthenticationDAO() throws SQLException {
+        if(connectionPool == null) throw new SQLException("Connection pool was not instantiated");
+        return new AuthenticationDaoMySQL(connectionPool.getConnection());
+    }
 }

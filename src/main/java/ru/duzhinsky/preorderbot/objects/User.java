@@ -2,12 +2,12 @@ package ru.duzhinsky.preorderbot.objects;
 
 public class User {
     private int id;
-    private String tgUsername;
+    private Long tgChatId;
     private String phoneNumber;
 
-    public User(int id, String tgUsername, String phoneNumber) {
+    public User(int id, Long tgChatId, String phoneNumber) {
         this.id = id;
-        this.tgUsername = tgUsername;
+        this.tgChatId = tgChatId;
         this.phoneNumber = phoneNumber;
     }
 
@@ -15,19 +15,27 @@ public class User {
         return id;
     }
 
-    public String getTgUsername() {
-        return tgUsername;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public String getPhoneNumber() {
         return phoneNumber;
     }
 
+    public Long getTgChatId() {
+        return tgChatId;
+    }
+
+    public void setTgChatId(Long tgChatId) {
+        this.tgChatId = tgChatId;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", tgUsername='" + tgUsername + '\'' +
+                ", tgChatId=" + tgChatId +
                 ", phoneNumber='" + phoneNumber + '\'' +
                 '}';
     }

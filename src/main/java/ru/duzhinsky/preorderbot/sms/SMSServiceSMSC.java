@@ -10,20 +10,20 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 
 public class SMSServiceSMSC implements SMSService {
-    public static final UriBuilder sendSMSURIbuilder;
+    public static final UriBuilder sendSMSURIBuilder;
 
     static
     {
         String user = Config.getProperty("smscUsername", "");
         String password = Config.getProperty("smscPassword", "");
-        sendSMSURIbuilder = UriBuilder.fromPath("https://smsc.ru/sys/send.php")
+        sendSMSURIBuilder = UriBuilder.fromPath("https://smsc.ru/sys/send.php")
                 .queryParam("login",user)
                 .queryParam("psw",password);
     }
 
     @Override
     public void sendSMS(String phoneNumber, String text) {
-        URI requestURI = sendSMSURIbuilder.queryParam("phones", phoneNumber).queryParam("mes", text).build();
+        URI requestURI = sendSMSURIBuilder.queryParam("phones", phoneNumber).queryParam("mes", text).build();
         System.out.println(requestURI);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(requestURI)

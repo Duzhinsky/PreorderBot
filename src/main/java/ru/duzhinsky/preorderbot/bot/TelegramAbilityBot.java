@@ -2,7 +2,6 @@ package ru.duzhinsky.preorderbot.bot;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.bot.BaseAbilityBot;
-
 import org.telegram.abilitybots.api.objects.*;
 import org.telegram.abilitybots.api.toggle.BareboneToggle;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -10,12 +9,17 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.duzhinsky.preorderbot.data.Config;
+import ru.duzhinsky.preorderbot.db.AuthenticationDAO;
 import ru.duzhinsky.preorderbot.db.MySQLDAOFactory;
 import ru.duzhinsky.preorderbot.db.UserDao;
+import ru.duzhinsky.preorderbot.sms.SMSService;
+import ru.duzhinsky.preorderbot.sms.SMSServiceSMSC;
 import ru.duzhinsky.preorderbot.utils.PhoneValidator;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
@@ -47,7 +51,7 @@ public class TelegramAbilityBot extends AbilityBot {
         isUserRegistered = db.<Long, Boolean>getMap("isUserRegistered");
     }
 
-    public ReplyFlow start() {
+    public ReplyFlow onStartup() {
         return ReplyFlow.builder(db)
                 .onlyIf(Flag.MESSAGE)
                 .onlyIf(upd->"/start".equals(upd.getMessage().getText()))
@@ -56,14 +60,24 @@ public class TelegramAbilityBot extends AbilityBot {
                     try {
                         isUserRegistered.put(
                                 getChatId(upd),
-                                userDao.isUserPresentByTgUsername(upd.getMessage().getChat().getUserName())
+                                userDao.isUserPresentByTgChatId(getChatId(upd))
                         );
                     } catch (Exception e) {
                         e.printStackTrace();
                         sendErrorMessage(upd);
                     }
                 })
-                .next(authFlow())
+                .next(authenticateUserFlow())
+                .next(onSuccessfulAuthentication())
+                .build();
+    }
+
+    private ReplyFlow onSuccessfulAuthentication() {
+        return ReplyFlow.builder(db)
+                .onlyIf(isUserRegisteredByUpdate())
+                .action((bot, upd) -> {
+                    silent.send("You successfully logged in as...", getChatId(upd));
+                })
                 .next(mainFlow())
                 .build();
     }
@@ -75,8 +89,8 @@ public class TelegramAbilityBot extends AbilityBot {
                 .build();
     }
 
-    private BiConsumer<BaseAbilityBot, Update> getAuthAction() {
-        return (bot, upd) -> {
+    private ReplyFlow authenticateUserFlow() {
+        BiConsumer<BaseAbilityBot, Update> action = (bot, upd) -> {
             Long chatId = getChatId(upd);
             SendMessage sendKeyboard = new SendMessage();
             sendKeyboard.setText("Похоже, вы используете телеграм бот для заказа впервые\nЕсли вы уже пользовались нашими сервисами, войдите по номеру телефона");
@@ -88,13 +102,9 @@ public class TelegramAbilityBot extends AbilityBot {
                 e.printStackTrace();
             }
         };
-    }
-
-
-    private ReplyFlow authFlow() {
         return ReplyFlow.builder(db)
                 .onlyIf(isUserRegisteredByUpdate().negate())
-                .action(getAuthAction())
+                .action(action)
                 .next(loginButtonReply())
                 .next(registerButtonReply())
                 .build();
@@ -127,12 +137,16 @@ public class TelegramAbilityBot extends AbilityBot {
         BiConsumer<BaseAbilityBot, Update> action = (bot,upd) -> {
             String input = upd.getMessage().getText();
             String phone = PhoneValidator.prepare(input);
+            sendPhoneCode(getChatId(upd), phone);
+
+            SendMessage message = new SendMessage();
+            message.setChatId(getChatId(upd).toString());
+            message.setText("Текст с кодом подтверждения был отправлен на номер " + phone + ". Отправьте его в ответ на данное сообщение.");
+            message.setReplyMarkup(TelegramKeyboards.backOrResendSMS("BACK_TO_AUTH", "RESEND_SMS_LOGIN"));
             try {
-                userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
-                isUserRegistered.put(getChatId(upd), true);
-            } catch (Exception e) {
+                execute(message);
+            } catch (TelegramApiException e) {
                 e.printStackTrace();
-                sendErrorMessage(upd);
             }
         };
         return ReplyFlow.builder(db)
@@ -146,7 +160,40 @@ public class TelegramAbilityBot extends AbilityBot {
                     return true;
                 })
                 .action(action)
-                .next(mainFlow())
+                .next(checkLoginSMS())
+                .build();
+    }
+
+    private ReplyFlow checkLoginSMS() {
+        return ReplyFlow.builder(db)
+                .onlyIf(Flag.MESSAGE)
+                .onlyIf(upd -> {
+                    try {
+                        Integer code;
+                        code = Integer.parseInt(upd.getMessage().getText());
+                        if(verifyPhoneCode(getChatId(upd), code))
+                            return true;
+                        silent.send("Вы ввели неверный код, попробуйте еще раз.", getChatId(upd));
+                        return false;
+                    } catch (NumberFormatException e) {
+                        silent.send("Введите в сообщение только код", getChatId(upd));
+                        return false;
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        sendErrorMessage(upd);
+                        return false;
+                    }
+                })
+                .action((bot, upd) -> {
+                    try {
+//                        userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
+                        isUserRegistered.put(getChatId(upd), true);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        sendErrorMessage(upd);
+                    }
+                })
+                .next(onSuccessfulAuthentication())
                 .build();
     }
 
@@ -179,7 +226,7 @@ public class TelegramAbilityBot extends AbilityBot {
             String phone = PhoneValidator.prepare(input);
             try {
                 userDao.addUser(phone);
-                userDao.associateUserWithTelegram(phone, upd.getMessage().getChat().getUserName());
+                userDao.associateUserWithTelegram(phone, getChatId(upd));
                 isUserRegistered.put(getChatId(upd), true);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -208,7 +255,7 @@ public class TelegramAbilityBot extends AbilityBot {
                 })
                 .onlyIf(Flag.CALLBACK_QUERY)
                 .onlyIf(upd -> upd.getCallbackQuery().getData().equals("BACK_TO_AUTH"))
-                .next(authFlow())
+                .next(authenticateUserFlow())
                 .build();
     }
 
@@ -259,6 +306,27 @@ public class TelegramAbilityBot extends AbilityBot {
                 return false;
             }
         };
+    }
+
+    private void sendPhoneCode(Long chatId, String phone) {
+        Integer code = new Random().nextInt(9000)+1000;
+        SMSService smsService = new SMSServiceSMSC();
+        smsService.sendSMS(phone, "Ваш код авторизации: " + code.toString());
+
+        try {
+            AuthenticationDAO authDao = MySQLDAOFactory.getAuthenticationDAO();
+            authDao.setUserAuthenticationCode(chatId, code);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean verifyPhoneCode(Long chatId, Integer code) throws SQLException {
+        Optional<Integer> storedCode = MySQLDAOFactory.getAuthenticationDAO().getUserAuthenticationCode(chatId);
+        if(storedCode.isEmpty()) return false;
+        return storedCode.get().equals(code);
     }
 
     private void sendErrorMessage(Update upd) {

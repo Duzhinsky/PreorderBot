@@ -27,4 +27,16 @@ public class TelegramKeyboards {
         markup.setKeyboard(List.of(List.of(backButton)));
         return markup;
     }
+
+    public static InlineKeyboardMarkup backOrResendSMS(String backData, String resendData) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton backButton = new InlineKeyboardButton();
+        backButton.setText("Назад");
+        backButton.setCallbackData(backData);
+        InlineKeyboardButton resendButton = new InlineKeyboardButton();
+        resendButton.setText("Отправить СМС еще раз");
+        resendButton.setCallbackData(resendData);
+        markup.setKeyboard(List.of(List.of(backButton), List.of(resendButton)));
+        return markup;
+    }
 }

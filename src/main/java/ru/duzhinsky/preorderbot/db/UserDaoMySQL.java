@@ -8,12 +8,17 @@ import java.util.Optional;
 public class UserDaoMySQL implements UserDao {
     private final Connection connection;
 
-    private static final String getUserByTgUsernameQuery =
-            "SELECT users.id, users.phone, tgusers.tgusername " +
-                    "FROM users " +
-                    "JOIN tgusers ON users.id=tgusers.user_id " +
-                    "WHERE tgusers.tgusername=? LIMIT 1;";
-    private final PreparedStatement getUserByTgUsernameStatement;
+
+    private static final String addUserQuery = "INSERT INTO users (phone) VALUES (?);";
+    private final PreparedStatement addUserStatement;
+
+    private static final String associateUserWithTelegramQuery =
+            "INSERT INTO tgusers (user_id, chat_id) SELECT id, ? FROM users WHERE phone=? LIMIT 1;";
+    private final PreparedStatement associateUserWithTelegram;
+
+    private static final String getUserByTgChatIdQuery = "\n" +
+            "SELECT u.id, u.phone, t.chat_id FROM users AS u JOIN tgusers t on u.id = t.user_id WHERE t.chat_id = ?;";
+    private final PreparedStatement getUserByTgChatIdStatement;
 
     private static final String getUserByPhoneQuery =
             "SELECT users.id, users.phone " +
@@ -21,16 +26,9 @@ public class UserDaoMySQL implements UserDao {
                     "WHERE users.phone=? LIMIT 1;";
     private final PreparedStatement getUserByPhoneStatement;
 
-    private static final String addUserQuery = "INSERT INTO users (phone) VALUES (?);";
-    private final PreparedStatement addUserStatement;
-
-    private static final String associateUserWithTelegramQuery =
-            "INSERT INTO tgusers (user_id, tgusername) SELECT id, ? FROM users WHERE phone=? LIMIT 1;";
-    private final PreparedStatement associateUserWithTelegram;
-
     public UserDaoMySQL(Connection connection) throws SQLException {
         this.connection = connection;
-        getUserByTgUsernameStatement = connection.prepareStatement(getUserByTgUsernameQuery);
+        getUserByTgChatIdStatement = connection.prepareStatement(getUserByTgChatIdQuery);
         getUserByPhoneStatement = connection.prepareStatement(getUserByPhoneQuery);
         addUserStatement = connection.prepareStatement(addUserQuery);
         associateUserWithTelegram = connection.prepareStatement(associateUserWithTelegramQuery);
@@ -43,22 +41,23 @@ public class UserDaoMySQL implements UserDao {
     }
 
     @Override
-    public void associateUserWithTelegram(String phone, String username) throws Exception {
-        associateUserWithTelegram.setString(1, username);
-        associateUserWithTelegram.setString(2,phone);
+    public void associateUserWithTelegram(String phone, Long chatId) throws Exception {
+        associateUserWithTelegram.setLong(1, chatId);
+        associateUserWithTelegram.setString(2, phone);
         associateUserWithTelegram.executeUpdate();
     }
 
     @Override
-    public Optional<User> getUserByTgUsername(String username) throws Exception {
-        getUserByTgUsernameStatement.setString(1,username);
-        ResultSet rs = getUserByTgUsernameStatement.executeQuery();
-        if(rs.next())
+    public Optional<User> getUserByTgChatId(Long chatId) throws Exception {
+        getUserByTgChatIdStatement.setLong(1, chatId);
+        ResultSet rs = getUserByTgChatIdStatement.executeQuery();
+        if(rs.next()) {
             return Optional.of(new User(
-                    rs.getInt("users.id"),
-                    rs.getString("tgusers.tgusername"),
-                    rs.getString("users.phone")
+                    rs.getInt(1),
+                    rs.getLong(3),
+                    rs.getString(2)
             ));
+        }
         return Optional.empty();
     }
 
@@ -69,14 +68,15 @@ public class UserDaoMySQL implements UserDao {
         if(rs.next())
             return Optional.of(new User(
                     rs.getInt("users.id"),
-                    "",
+                    0L,
                     rs.getString("users.phone")
             ));
         return Optional.empty();
     }
 
     @Override
-    public boolean isUserPresentByTgUsername(String username) throws Exception {
-        return getUserByTgUsername(username).isPresent();
+    public boolean isUserPresentByTgChatId(Long chatId) throws Exception {
+        return getUserByTgChatId(chatId).isPresent();
     }
+
 }

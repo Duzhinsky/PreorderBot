@@ -5,8 +5,8 @@ import java.util.Optional;
 
 public interface UserDao {
     void addUser(String phoneNumber) throws Exception;
-    void associateUserWithTelegram(String phoneNumber, String tgUsername) throws Exception;
-    Optional<User> getUserByTgUsername(String username) throws Exception;
+    void associateUserWithTelegram(String phoneNumber, Long chatId) throws Exception;
+    Optional<User> getUserByTgChatId(Long chatId) throws Exception;
     Optional<User> getUserByPhone(String phoneNumber) throws Exception;
-    boolean isUserPresentByTgUsername(String username) throws Exception;
+    boolean isUserPresentByTgChatId(Long chatId) throws Exception;
 }
