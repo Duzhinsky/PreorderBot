@@ -1,5 +1,6 @@
 package ru.duzhinsky.preorderbot.db;
 
+import ru.duzhinsky.preorderbot.bot.handlers.TelegramChatHandlerEnum;
 import ru.duzhinsky.preorderbot.objects.User;
 
 import java.sql.Connection;
@@ -10,6 +11,9 @@ import java.util.Optional;
 
 public class TelegramDaoMySQL implements TelegramDao {
     Connection connection;
+
+    private static final String getChatHandlerQuery = "SELECT handler, handler_state FROM tg_users_state WHERE chat_id=?;";
+    private final PreparedStatement getChatHandlerStatement;
 
     private static final String associateUserWithTelegramQuery =
             "INSERT INTO tgusers (user_id, chat_id) SELECT id, ? FROM users WHERE phone=? LIMIT 1;";
@@ -23,19 +27,28 @@ public class TelegramDaoMySQL implements TelegramDao {
             "SELECT phone FROM authenticationcodes WHERE authenticationCodes.chat_id=? ORDER BY created DESC LIMIT 1;";
     private final PreparedStatement getLastVerifiedPhoneStatement;
 
-    private static final String logMessageQuery =
-            "INSERT INTO messagepool (chat_id, message_id) VALUES (?,?);";
-    private final PreparedStatement logMessageStatement;
-
-    private final PreparedStatement clearMessagePoolStatement;
 
     public TelegramDaoMySQL(Connection connection) throws SQLException {
         this.connection = connection;
+        getChatHandlerStatement = connection.prepareStatement(getChatHandlerQuery);
         associateUserWithTelegramStatement = connection.prepareStatement(associateUserWithTelegramQuery);
         getUserByTgChatIdStatement = connection.prepareStatement(getUserByTgChatIdQuery);
         getLastVerifiedPhoneStatement = connection.prepareStatement(getLastVerifiedPhoneQuery);
-        logMessageStatement = connection.prepareStatement(logMessageQuery);
-        clearMessagePoolStatement = connection.prepareStatement("DELETE FROM messagepool WHERE chat_id=?;");
+    }
+
+    @Override
+    public TelegramChatHandlerEnum getChatHandler(Long chatId) {
+        try {
+            getChatHandlerStatement.setLong(1, chatId);
+            ResultSet rs = getChatHandlerStatement.executeQuery();
+            if (rs.next()) {
+                TelegramChatHandlerEnum chatHandlerEnum = TelegramChatHandlerEnum.valueOf(rs.getString("handler"));
+                return chatHandlerEnum;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return TelegramChatHandlerEnum.DEFAULT;
     }
 
     @Override
@@ -69,18 +82,5 @@ public class TelegramDaoMySQL implements TelegramDao {
             );
         }
         return Optional.empty();
-    }
-
-    @Override
-    public void logMessage(Long chatId, Integer messageId) throws SQLException {
-        logMessageStatement.setLong(1, chatId);
-        logMessageStatement.setInt(2, messageId);
-        logMessageStatement.executeUpdate();
-    }
-
-    @Override
-    public void clearMessagePool(Long charId) throws Exception {
-        clearMessagePoolStatement.setLong(1, charId);
-        clearMessagePoolStatement.executeUpdate();
     }
 }
