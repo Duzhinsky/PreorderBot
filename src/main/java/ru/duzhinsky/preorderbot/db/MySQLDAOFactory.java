@@ -3,7 +3,6 @@ package ru.duzhinsky.preorderbot.db;
 import ru.duzhinsky.preorderbot.data.Config;
 
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class MySQLDAOFactory {
     private static ConnectionPool connectionPool;
@@ -28,5 +27,10 @@ public class MySQLDAOFactory {
     public static AuthenticationDAO getAuthenticationDAO() throws SQLException {
         if(connectionPool == null) throw new SQLException("Connection pool was not instantiated");
         return new AuthenticationDaoMySQL(connectionPool.getConnection());
+    }
+
+    public static TelegramDao getTelegramDao() throws SQLException {
+        if(connectionPool == null) throw new SQLException("Connection pool was not instantiated");
+        return new TelegramDaoMySQL(connectionPool.getConnection());
     }
 }

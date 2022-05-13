@@ -6,7 +6,7 @@ import java.util.Optional;
 public class AuthenticationDaoMySQL implements AuthenticationDAO {
     private final Connection connection;
 
-    public static final String setUserAuthenticationCodeQuery = "INSERT INTO authenticationcodes (chat_id, code, created) VALUES (?,?,now());";
+    public static final String setUserAuthenticationCodeQuery = "INSERT INTO authenticationcodes (chat_id, code, created, phone) VALUES (?,?,now(),?);";
     public final PreparedStatement setUserAuthenticationCodeStatement;
 
     public static final String getUserAuthenticationCodeQuery = "SELECT code FROM authenticationcodes WHERE chat_id=? ORDER BY created DESC;";
@@ -19,9 +19,10 @@ public class AuthenticationDaoMySQL implements AuthenticationDAO {
     }
 
     @Override
-    public void setUserAuthenticationCode(Long chatId, int code) throws SQLException {
+    public void setUserAuthenticationCode(Long chatId, String phoneNumber, int code) throws SQLException {
         setUserAuthenticationCodeStatement.setLong(1, chatId);
         setUserAuthenticationCodeStatement.setInt(2, code);
+        setUserAuthenticationCodeStatement.setString(3, phoneNumber);
         setUserAuthenticationCodeStatement.executeUpdate();
     }
 
