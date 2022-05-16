@@ -1,6 +1,6 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-public enum TelegramChatHandlerEnum {
+public enum ChatState {
     DEFAULT,
     LOGIN,
     REGISTRATION,

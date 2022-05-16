@@ -1,6 +1,6 @@
 package ru.duzhinsky.preorderbot.sms;
 
-import ru.duzhinsky.preorderbot.data.Config;
+import ru.duzhinsky.preorderbot.config.Config;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;

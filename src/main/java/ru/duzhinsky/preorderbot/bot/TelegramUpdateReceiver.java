@@ -1,11 +1,12 @@
 package ru.duzhinsky.preorderbot.bot;
 
+import jakarta.persistence.EntityManager;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.handlers.DefaultChatHandler;
 import ru.duzhinsky.preorderbot.bot.handlers.TelegramChatHandler;
-import ru.duzhinsky.preorderbot.bot.handlers.TelegramChatHandlerEnum;
-import ru.duzhinsky.preorderbot.db.MySQLDAOFactory;
-import ru.duzhinsky.preorderbot.db.TelegramDao;
+import ru.duzhinsky.preorderbot.bot.handlers.ChatState;
+import ru.duzhinsky.preorderbot.entities.TgChat;
+import ru.duzhinsky.preorderbot.entities.repositories.TgChatRepository;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
@@ -13,12 +14,11 @@ import java.sql.SQLException;
 
 public class TelegramUpdateReceiver implements Runnable {
     private final TelegramBot bot;
-    private final int WAIT_FOR_NEW_MESSAGE_DELAY = 100;
-    private final TelegramDao telegramDao;
+    private final TgChatRepository chatRepository;
 
-    public TelegramUpdateReceiver(TelegramBot bot) throws SQLException {
+    public TelegramUpdateReceiver(TelegramBot bot, EntityManager entityManager) {
         this.bot = bot;
-        telegramDao = MySQLDAOFactory.getTelegramDao();
+        chatRepository = new TgChatRepository(entityManager);
     }
 
     @Override
@@ -28,6 +28,7 @@ public class TelegramUpdateReceiver implements Runnable {
                 analyze(object);
             }
             try {
+                int WAIT_FOR_NEW_MESSAGE_DELAY = 100;
                 Thread.sleep(WAIT_FOR_NEW_MESSAGE_DELAY);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -44,15 +45,24 @@ public class TelegramUpdateReceiver implements Runnable {
 
     private void analyzeForUpdate(Update update) {
         Long chatId = getChatId(update);
-        TelegramChatHandlerEnum chatHandlerEnum = telegramDao.getChatHandler(chatId);
-        TelegramChatHandler chatHandler = getHandler(chatHandlerEnum);
+        TgChat chat = chatRepository.findById(chatId);
+        if(chat == null) {
+            TgChat newChat = new TgChat();
+            newChat.setId(chatId);
+            chatRepository.create(newChat);
+            chat = newChat;
+        }
+        TelegramChatHandler chatHandler = getHandler(chat.getChatState());
         chatHandler.handle(update);
     }
 
-    private TelegramChatHandler getHandler(TelegramChatHandlerEnum handlerEnum) {
+    private TelegramChatHandler getHandler(ChatState handlerEnum) {
+        if(handlerEnum == null) return new DefaultChatHandler(bot);
         switch (handlerEnum) {
-            case DEFAULT: new DefaultChatHandler(bot);
+            case DEFAULT:
+                return new DefaultChatHandler(bot);
+            default:
+                return new DefaultChatHandler(bot);
         }
-        return new DefaultChatHandler(bot);
     }
 }
