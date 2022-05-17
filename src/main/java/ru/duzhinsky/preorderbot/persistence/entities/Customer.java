@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.entities;
+package ru.duzhinsky.preorderbot.persistence.entities;
 
 import jakarta.persistence.*;
 import lombok.*;

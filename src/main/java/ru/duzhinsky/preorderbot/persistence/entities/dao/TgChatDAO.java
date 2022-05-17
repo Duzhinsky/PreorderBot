@@ -1,9 +1,9 @@
-package ru.duzhinsky.preorderbot.entities.dao;
+package ru.duzhinsky.preorderbot.persistence.entities.dao;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import ru.duzhinsky.preorderbot.entities.TgChat;
+import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
 
 import javax.inject.Inject;
 

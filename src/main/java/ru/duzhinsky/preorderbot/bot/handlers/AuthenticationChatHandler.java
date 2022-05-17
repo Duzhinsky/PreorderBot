@@ -7,9 +7,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
-import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.dao.DAOFactory;
-import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
+import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.DAOFactory;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
 
 import java.util.List;
 

@@ -4,8 +4,8 @@
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
              version="3.0">
   <persistence-unit name="Hibernate">
-    <class>ru.duzhinsky.preorderbot.entities.Customer</class>
-    <class>ru.duzhinsky.preorderbot.entities.TgChat</class>
+    <class>ru.duzhinsky.preorderbot.persistence.entities.Customer</class>
+    <class>ru.duzhinsky.preorderbot.persistence.entities.TgChat</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
 <!--      <property name="hibernate.show_sql" value="true"/>-->

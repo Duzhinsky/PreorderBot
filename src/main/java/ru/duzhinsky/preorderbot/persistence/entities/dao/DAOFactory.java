@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.entities.dao;
+package ru.duzhinsky.preorderbot.persistence.entities.dao;
 
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;

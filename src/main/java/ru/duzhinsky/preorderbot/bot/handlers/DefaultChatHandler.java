@@ -4,9 +4,9 @@ import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
-import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.dao.DAOFactory;
-import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
+import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.DAOFactory;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
 
 public class DefaultChatHandler implements TelegramChatHandler {
     private final TelegramBot bot;

@@ -4,8 +4,8 @@ import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.handlers.*;
-import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
+import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
