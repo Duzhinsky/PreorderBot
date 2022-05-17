@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.entities.repositories;
+package ru.duzhinsky.preorderbot.entities.dao;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -7,13 +7,13 @@ import ru.duzhinsky.preorderbot.entities.TgChat;
 
 import javax.inject.Inject;
 
-public class TgChatRepository {
+public class TgChatDAO {
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Inject
-    public TgChatRepository(EntityManager entityManager) {
+    public TgChatDAO(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
 

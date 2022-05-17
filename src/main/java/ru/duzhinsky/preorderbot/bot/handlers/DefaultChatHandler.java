@@ -7,18 +7,18 @@ import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.repositories.TgChatRepository;
+import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
 
 public class DefaultChatHandler implements TelegramChatHandler {
     private final TelegramBot bot;
-    private final TgChatRepository chatRepository;
+    private final TgChatDAO chatRepository;
 
     Weld weld = new Weld();
     WeldContainer container = weld.initialize();
 
     public DefaultChatHandler(TelegramBot bot) {
         this.bot = bot;
-        this.chatRepository = container.select(TgChatRepository.class).get();
+        this.chatRepository = container.select(TgChatDAO.class).get();
     }
 
     @Override
