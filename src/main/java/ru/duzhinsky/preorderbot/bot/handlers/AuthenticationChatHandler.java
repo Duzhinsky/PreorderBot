@@ -2,15 +2,14 @@ package ru.duzhinsky.preorderbot.bot.handlers;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.repositories.TgChatRepository;
+import ru.duzhinsky.preorderbot.entities.dao.DAOFactory;
+import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
 
 import java.util.List;
 
@@ -23,14 +22,11 @@ public class AuthenticationChatHandler implements TelegramChatHandler {
     private TgChat chat;
 
     private final TelegramBot bot;
-    private final TgChatRepository chatRepository;
-
-    Weld weld = new Weld();
-    WeldContainer container = weld.initialize();
+    private final TgChatDAO chatRepository;
 
     public AuthenticationChatHandler(TelegramBot bot, Short stateOrdinal) {
         this.bot = bot;
-        this.chatRepository = container.select(TgChatRepository.class).get();
+        this.chatRepository = DAOFactory.getTgChatDAO();
 
         if(stateOrdinal == null) stateOrdinal = 0;
         state = State.values()[stateOrdinal];
@@ -47,7 +43,6 @@ public class AuthenticationChatHandler implements TelegramChatHandler {
             handleKeyboard(upd);
         }
         chatRepository.persist(chat);
-        weld.shutdown();
     }
 
     private void handleKeyboard(Update upd) {

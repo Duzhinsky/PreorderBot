@@ -2,23 +2,19 @@ package ru.duzhinsky.preorderbot.bot.handlers;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.entities.TgChat;
+import ru.duzhinsky.preorderbot.entities.dao.DAOFactory;
 import ru.duzhinsky.preorderbot.entities.dao.TgChatDAO;
 
 public class DefaultChatHandler implements TelegramChatHandler {
     private final TelegramBot bot;
     private final TgChatDAO chatRepository;
 
-    Weld weld = new Weld();
-    WeldContainer container = weld.initialize();
-
     public DefaultChatHandler(TelegramBot bot) {
         this.bot = bot;
-        this.chatRepository = container.select(TgChatDAO.class).get();
+        this.chatRepository = DAOFactory.getTgChatDAO();
     }
 
     @Override
@@ -32,7 +28,5 @@ public class DefaultChatHandler implements TelegramChatHandler {
         chat.setChatHandlerState((short)0);
         chatRepository.persist(chat);
         bot.getReceiveQueue().add(upd);
-
-        weld.shutdown();
     }
 }
