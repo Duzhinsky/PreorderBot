@@ -1,24 +1,23 @@
 package ru.duzhinsky.preorderbot.bot;
 
-import jakarta.persistence.EntityManager;
+import org.jboss.weld.environment.se.Weld;
+import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.duzhinsky.preorderbot.bot.handlers.DefaultChatHandler;
-import ru.duzhinsky.preorderbot.bot.handlers.TelegramChatHandler;
-import ru.duzhinsky.preorderbot.bot.handlers.ChatState;
+import ru.duzhinsky.preorderbot.bot.handlers.*;
 import ru.duzhinsky.preorderbot.entities.TgChat;
 import ru.duzhinsky.preorderbot.entities.repositories.TgChatRepository;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
-import java.sql.SQLException;
-
 public class TelegramUpdateReceiver implements Runnable {
     private final TelegramBot bot;
     private final TgChatRepository chatRepository;
 
-    public TelegramUpdateReceiver(TelegramBot bot, EntityManager entityManager) {
+    public TelegramUpdateReceiver(TelegramBot bot) {
         this.bot = bot;
-        chatRepository = new TgChatRepository(entityManager);
+        Weld weld = new Weld();
+        WeldContainer container = weld.initialize();
+        this.chatRepository = container.select(TgChatRepository.class).get();
     }
 
     @Override
@@ -49,18 +48,22 @@ public class TelegramUpdateReceiver implements Runnable {
         if(chat == null) {
             TgChat newChat = new TgChat();
             newChat.setId(chatId);
-            chatRepository.create(newChat);
+            chatRepository.persist(newChat);
             chat = newChat;
         }
-        TelegramChatHandler chatHandler = getHandler(chat.getChatState());
-        chatHandler.handle(update);
+        TelegramChatHandler chatHandler = getHandler(chat.getChatState(), chat.getChatHandlerState());
+        new Thread(() -> chatHandler.handle(update)).start();
     }
 
-    private TelegramChatHandler getHandler(ChatState handlerEnum) {
-        if(handlerEnum == null) return new DefaultChatHandler(bot);
-        switch (handlerEnum) {
-            case DEFAULT:
-                return new DefaultChatHandler(bot);
+    private TelegramChatHandler getHandler(ChatState handler, Short handlerState) {
+        if(handler == null) return new DefaultChatHandler(bot);
+        switch (handler) {
+            case AUTHENTICATION:
+                return new AuthenticationChatHandler(bot, handlerState);
+            case LOGIN:
+                return new LoginChatHandler(bot, handlerState);
+            case REGISTRATION:
+                return new RegistrationChatHandler(bot, handlerState);
             default:
                 return new DefaultChatHandler(bot);
         }

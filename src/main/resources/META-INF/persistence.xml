@@ -8,9 +8,9 @@
     <class>ru.duzhinsky.preorderbot.entities.TgChat</class>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
     <properties>
-      <property name="hibernate.show_sql" value="true"/>
-      <property name="hibernate.format_sql" value="true"/>
-      <property name="hibernate.use_sql_comments" value="true"/>
+<!--      <property name="hibernate.show_sql" value="true"/>-->
+<!--      <property name="hibernate.format_sql" value="true"/>-->
+<!--      <property name="hibernate.use_sql_comments" value="true"/>-->
       <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
       <property name="hibernate.hbm2ddl.auto" value="update"/>
       <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>

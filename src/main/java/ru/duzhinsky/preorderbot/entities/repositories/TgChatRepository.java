@@ -1,23 +1,30 @@
 package ru.duzhinsky.preorderbot.entities.repositories;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import ru.duzhinsky.preorderbot.entities.TgChat;
-import ru.duzhinsky.preorderbot.entities.dao.impl.TgChatDaoImpl;
+
+import javax.inject.Inject;
 
 public class TgChatRepository {
-    private final TgChatDaoImpl tgChatDao;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Inject
     public TgChatRepository(EntityManager entityManager) {
-        tgChatDao = new TgChatDaoImpl(entityManager);
+        this.entityManager = entityManager;
     }
 
-    public void create(TgChat tgChat) {
-        tgChatDao.beginTransaction();
-        tgChatDao.create(tgChat);
-        tgChatDao.commit();
+    @Transactional
+    public void persist(TgChat tgChat) {
+        entityManager.getTransaction().begin();
+        entityManager.persist(tgChat);
+        entityManager.getTransaction().commit();
     }
 
     public TgChat findById(Long id) {
-        return tgChatDao.findById(id);
+        return entityManager.find(TgChat.class, id);
     }
 }

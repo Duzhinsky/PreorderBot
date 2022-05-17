@@ -1,6 +1,5 @@
 package ru.duzhinsky.preorderbot.bot;
 
-import jakarta.persistence.EntityManager;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.config.Config;
@@ -20,8 +19,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         BOT_USERNAME = Config.getProperty("username","");
     }
 
-    public TelegramBot(EntityManager entityManager) {
-        TelegramUpdateReceiver receiver = new TelegramUpdateReceiver(this, entityManager);
+    public TelegramBot() {
+        TelegramUpdateReceiver receiver = new TelegramUpdateReceiver(this);
         Thread receiverThread = new Thread(receiver);
         receiverThread.setDaemon(true);
         receiverThread.setName("MsgReceiver");

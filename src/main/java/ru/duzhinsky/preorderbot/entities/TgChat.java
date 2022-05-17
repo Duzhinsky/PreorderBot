@@ -16,8 +16,11 @@ public class TgChat {
     private Long id;
 
     @Column(name = "handler")
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     private ChatState chatState;
+
+    @Column(name = "handler_state")
+    private Short chatHandlerState;
 
     @ManyToOne
     @JoinColumn(name="customer_id")
