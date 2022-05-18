@@ -1,23 +1,18 @@
 package ru.duzhinsky.preorderbot.bot;
 
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.handlers.*;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
+import ru.duzhinsky.preorderbot.persistence.entities.dao.DAOFactory;
 import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
 
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 public class TelegramUpdateReceiver implements Runnable {
     private final TelegramBot bot;
-    private final TgChatDAO chatRepository;
 
     public TelegramUpdateReceiver(TelegramBot bot) {
         this.bot = bot;
-        Weld weld = new Weld();
-        WeldContainer container = weld.initialize();
-        this.chatRepository = container.select(TgChatDAO.class).get();
     }
 
     @Override
@@ -44,13 +39,25 @@ public class TelegramUpdateReceiver implements Runnable {
 
     private void analyzeForUpdate(Update update) {
         Long chatId = getChatId(update);
-        TgChat chat = chatRepository.findById(chatId);
+        TgChatDAO chatDAO = DAOFactory.getTgChatDAO();
+        TgChat chat = chatDAO.findById(chatId);
         if(chat == null) {
             TgChat newChat = new TgChat();
             newChat.setId(chatId);
-            chatRepository.persist(newChat);
+            chatDAO.save(newChat);
             chat = newChat;
         }
+        if(update.hasMessage() && update.getMessage().getText().equals("/start")) {
+            update.getMessage().setText("/SSSTTT");
+            chatDAO.update(
+                    chat.getId(),
+                    c -> c.setChatState(null)
+            );
+        }
+        chatDAO.close();
+
+        System.out.println("MMM UPDATE: " + update);
+        System.out.println(chat);
         TelegramChatHandler chatHandler = getHandler(chat.getChatState(), chat.getChatHandlerState());
         new Thread(() -> chatHandler.handle(update)).start();
     }
@@ -68,4 +75,5 @@ public class TelegramUpdateReceiver implements Runnable {
                 return new DefaultChatHandler(bot);
         }
     }
+
 }

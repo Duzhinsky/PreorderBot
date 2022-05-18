@@ -1,13 +1,12 @@
 package ru.duzhinsky.preorderbot.persistence.entities.dao;
 
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class DAOFactory {
-    private static Weld weld = new Weld();
-    private static WeldContainer container = weld.initialize();
+    private static final EntityManagerFactory emFactory = Persistence.createEntityManagerFactory("Hibernate");
 
     public static TgChatDAO getTgChatDAO() {
-        return container.select(TgChatDAO.class).get();
+        return new TgChatDAO(emFactory.createEntityManager());
     }
 }

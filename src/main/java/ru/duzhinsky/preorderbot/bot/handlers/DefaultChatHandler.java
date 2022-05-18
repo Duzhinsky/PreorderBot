@@ -10,23 +10,30 @@ import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
 
 public class DefaultChatHandler implements TelegramChatHandler {
     private final TelegramBot bot;
-    private final TgChatDAO chatRepository;
+    private final TgChatDAO chatDAO;
 
     public DefaultChatHandler(TelegramBot bot) {
         this.bot = bot;
-        this.chatRepository = DAOFactory.getTgChatDAO();
+        this.chatDAO = DAOFactory.getTgChatDAO();
     }
 
     @Override
     public void handle(Update upd) {
         Long chatId = getChatId(upd);
-        TgChat chat = chatRepository.findById(chatId);
+        TgChat chat = chatDAO.findById(chatId);
         if(chat.getCustomer() == null)
-            chat.setChatState(ChatState.AUTHENTICATION);
+            chatDAO.update(
+                    chat.getId(),
+                    c -> c.setChatState(ChatState.AUTHENTICATION),
+                    c -> c.setChatHandlerState((short)0)
+            );
         else
-            chat.setChatState(ChatState.MAIN_MENU);
-        chat.setChatHandlerState((short)0);
-        chatRepository.persist(chat);
+            chatDAO.update(
+                    chat.getId(),
+                    c -> c.setChatState(ChatState.MAIN_MENU),
+                    c -> c.setChatHandlerState((short)0)
+            );
+        chatDAO.close();
         bot.getReceiveQueue().add(upd);
     }
 }
