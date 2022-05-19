@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.data;
+package ru.duzhinsky.preorderbot.config;
 
 import org.json.JSONObject;
 
@@ -14,7 +14,7 @@ public class Config {
 
     static {
         try {
-            String json = Files.readString(Path.of("src/main/java/ru/duzhinsky/preorderbot/data/config.json"));
+            String json = Files.readString(Path.of("src/main/java/ru/duzhinsky/preorderbot/config/config.json"));
             JSONObject configObject = new JSONObject(json);
             Iterator<String> keys = configObject.keys();
             while(keys.hasNext()) {
