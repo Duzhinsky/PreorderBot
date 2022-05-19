@@ -7,8 +7,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
-import ru.duzhinsky.preorderbot.persistence.entities.dao.DAOFactory;
-import ru.duzhinsky.preorderbot.persistence.entities.dao.TgChatDAO;
+import ru.duzhinsky.preorderbot.persistence.dao.EntityDAO;
+import ru.duzhinsky.preorderbot.persistence.dao.JPADAOFactory;
 
 import java.util.List;
 
@@ -27,21 +27,21 @@ public class LoginChatHandler implements TelegramChatHandler {
     private TgChat chat;
 
     private final TelegramBot bot;
-    private final TgChatDAO chatDAO;
+    private final EntityDAO<TgChat, Long> chatDAO;
 
     public LoginChatHandler(TelegramBot bot, Short stateOrdinal) {
         this.bot = bot;
         this.state = State.values()[stateOrdinal];
-        this.chatDAO = DAOFactory.getTgChatDAO();
+        this.chatDAO = new JPADAOFactory().getDao(TgChat.class);
     }
 
     @Override
     public void handle(Update upd) {
-        chat = chatDAO.findById(getChatId(upd));
+        chat = chatDAO.find(getChatId(upd));
         if(state == State.REQUEST_PHONE) {
             requestPhone(upd);
             chatDAO.update(
-                    chat.getId(),
+                    chat,
                     c -> c.setChatHandlerState((short)State.INPUT_PHONE.ordinal())
             );
             bot.getReceiveQueue().add(upd);
@@ -50,7 +50,7 @@ public class LoginChatHandler implements TelegramChatHandler {
                 String option = upd.getCallbackQuery().getData();
                 if("BACK_TO_AUTH".equals(option)) {
                     chatDAO.update(
-                            chat.getId(),
+                            chat,
                             c -> c.setChatState(ChatState.AUTHENTICATION),
                             c -> c.setChatHandlerState((short)0)
                     );

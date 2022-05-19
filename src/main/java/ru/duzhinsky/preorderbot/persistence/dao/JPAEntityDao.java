@@ -1,41 +1,45 @@
-package ru.duzhinsky.preorderbot.persistence.entities.dao;
+package ru.duzhinsky.preorderbot.persistence.dao;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.RollbackException;
-import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class TgChatDAO {
-    private EntityManager entityManager;
+public class JPAEntityDao<T, Id extends Serializable> implements EntityDAO<T, Id> {
+    private final EntityManager entityManager;
+    private final Class<T> clazz;
 
-    public TgChatDAO(EntityManager entityManager) {
+    public JPAEntityDao(EntityManager entityManager, Class<T> clazz) {
         this.entityManager = entityManager;
+        this.clazz = clazz;
     }
 
-    public TgChat findById(Long id) {
-        return entityManager.find(TgChat.class, id);
+    @Override
+    public T find(Id id) {
+        return entityManager.find(clazz, id);
     }
 
-    public void update(Long id, Consumer<TgChat>... updates) {
-        TgChat entity = findById(id);
-        Arrays.stream(updates).forEach(up -> up.accept(entity));
+    @Override
+    public void remove(T e) {
         beginTransaction();
+        entityManager.remove(e);
         commitTransaction();
     }
 
-    public void save(TgChat entity) {
+    @Override
+    public void persist(T e) {
         beginTransaction();
-        entityManager.persist(entity);
+        entityManager.persist(e);
         commitTransaction();
     }
 
-    public void remove(Long id) {
-        TgChat entity = findById(id);
+    @Override
+    public void update(T e, Consumer<T>... updates) {
         beginTransaction();
-        entityManager.remove(entity);
+        Arrays.stream(updates).forEach(up -> up.accept(e));
         commitTransaction();
     }
 
@@ -63,6 +67,7 @@ public class TgChatDAO {
         }
     }
 
+    @Override
     public void close() {
         if(entityManager != null && entityManager.isOpen())
             entityManager.close();
