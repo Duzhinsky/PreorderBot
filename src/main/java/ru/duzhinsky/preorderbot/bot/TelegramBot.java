@@ -2,17 +2,20 @@ package ru.duzhinsky.preorderbot.bot;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import ru.duzhinsky.preorderbot.bot.handlers.ChatUpdate;
 import ru.duzhinsky.preorderbot.config.Config;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 public class TelegramBot extends TelegramLongPollingBot {
     private static final String BOT_TOKEN;
     private static final String BOT_USERNAME;
 
     private final Queue<Object> sendQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<Object> receiveQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<ChatUpdate<?>> receiveQueue = new ConcurrentLinkedQueue<>();
 
     static {
         BOT_TOKEN = Config.getProperty("token","");
@@ -39,7 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return sendQueue;
     }
 
-    public Queue<Object> getReceiveQueue() {
+    public Queue<ChatUpdate<?>> getReceiveQueue() {
         return receiveQueue;
     }
 
@@ -55,6 +58,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        receiveQueue.add(update);
+        receiveQueue.add(new ChatUpdate<Update>(this, getChatId(update), update));
     }
 }

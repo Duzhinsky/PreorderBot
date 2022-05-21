@@ -1,7 +1,23 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-import org.telegram.telegrambots.meta.api.objects.Update;
+import ru.duzhinsky.preorderbot.bot.TelegramBot;
 
-public interface TelegramChatHandler {
-    void handle(Update upd);
+public abstract class TelegramChatHandler {
+    protected TelegramBot bot;
+    protected Short stateOrdinal;
+
+    public TelegramChatHandler(TelegramBot bot, Short stateOrdinal) {
+        this.bot = bot;
+        this.stateOrdinal = stateOrdinal;
+    }
+
+    public void handle(ChatUpdate<?> upd) {
+        init();
+        handleAction(upd);
+        close();
+    }
+
+    public abstract void init();
+    public abstract void handleAction(ChatUpdate<?> upd);
+    public abstract void close();
 }

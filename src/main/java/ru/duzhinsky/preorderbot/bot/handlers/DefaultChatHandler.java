@@ -1,25 +1,31 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
-
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.checkerframework.checker.units.qual.C;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
-import ru.duzhinsky.preorderbot.persistence.dao.EntityDAO;
-import ru.duzhinsky.preorderbot.persistence.dao.JPADAOFactory;
+import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
+import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;
 
-public class DefaultChatHandler implements TelegramChatHandler {
-    private final TelegramBot bot;
-    private final EntityDAO<TgChat, Long> chatDAO;
+public class DefaultChatHandler extends TelegramChatHandler {
+    private EntityDao<TgChat, Long> chatDAO;
 
-    public DefaultChatHandler(TelegramBot bot) {
-        this.bot = bot;
-        this.chatDAO = new JPADAOFactory().getDao(TgChat.class);
+    public DefaultChatHandler(TelegramBot bot, Short stateOrdinal) {
+        super(bot, stateOrdinal);
     }
 
     @Override
-    public void handle(Update upd) {
-        Long chatId = getChatId(upd);
+    public void init() {
+        chatDAO = new JpaDaoFactory<TgChat, Long>().getDao(TgChat.class);
+    }
+
+    @Override
+    public void close() {
+        chatDAO.close();
+    }
+
+    @Override
+    public void handleAction(ChatUpdate<?> upd) {
+        Long chatId = upd.getChatId();
         TgChat chat = chatDAO.find(chatId);
         if(chat.getCustomer() == null)
             chatDAO.update(
@@ -33,7 +39,6 @@ public class DefaultChatHandler implements TelegramChatHandler {
                     c -> c.setChatState(ChatState.MAIN_MENU),
                     c -> c.setChatHandlerState((short)0)
             );
-        chatDAO.close();
-        bot.getReceiveQueue().add(upd);
+        bot.getReceiveQueue().add(new ChatUpdate<>(bot, chatId, null));
     }
 }

@@ -1,22 +1,29 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 
-public class RegistrationChatHandler implements TelegramChatHandler {
+public class RegistrationChatHandler extends TelegramChatHandler {
     private enum State {
 
     }
-    private final State state;
-    private final TelegramBot bot;
+    private State state;
 
     public RegistrationChatHandler(TelegramBot bot, Short stateOrdinal) {
-        this.bot = bot;
-        this.state = State.values()[stateOrdinal];
+        super(bot, stateOrdinal);
     }
 
     @Override
-    public void handle(Update upd) {
+    public void init() {
+
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
+    public void handleAction(ChatUpdate<?> upd) {
 
     }
 }

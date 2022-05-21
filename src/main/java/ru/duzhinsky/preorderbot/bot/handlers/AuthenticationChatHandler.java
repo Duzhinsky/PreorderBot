@@ -1,19 +1,17 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
-
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
-import ru.duzhinsky.preorderbot.persistence.dao.EntityDAO;
-import ru.duzhinsky.preorderbot.persistence.dao.JPADAOFactory;
+import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
+import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;
 
 import java.util.List;
 
-public class AuthenticationChatHandler implements TelegramChatHandler {
+public class AuthenticationChatHandler extends TelegramChatHandler {
     private static final String messageText =
             "Похоже, вы используете телеграм бот для заказа впервые\n" +
             "Если вы уже пользовались нашими сервисами, войдите по номеру телефона";
@@ -22,23 +20,31 @@ public class AuthenticationChatHandler implements TelegramChatHandler {
         SEND_MESSAGE,
         WAITING_KEYBOARD_REPLY
     }
-    private final State state;
+    private State state;
     private TgChat chat;
-
-    private final TelegramBot bot;
-    private final EntityDAO<TgChat, Long> chatDAO;
+    private EntityDao<TgChat, Long> chatDAO;
 
     public AuthenticationChatHandler(TelegramBot bot, Short stateOrdinal) {
-        this.bot = bot;
-        this.chatDAO = new JPADAOFactory().getDao(TgChat.class);
-
-        if(stateOrdinal == null) stateOrdinal = 0;
-        state = State.values()[stateOrdinal];
+        super(bot, stateOrdinal);
     }
 
     @Override
-    public void handle(Update upd) {
-        chat = chatDAO.find(getChatId(upd));
+    public void init() {
+        this.chatDAO = new JpaDaoFactory<TgChat, Long>().getDao(TgChat.class);
+        if(stateOrdinal == null)
+            stateOrdinal = 0;
+        if(stateOrdinal < State.values().length)
+            state = State.values()[stateOrdinal];
+    }
+
+    @Override
+    public void close() {
+        chatDAO.close();
+    }
+
+    @Override
+    public void handleAction(ChatUpdate<?> upd) {
+        chat = chatDAO.find(upd.getChatId());
         if(state == State.SEND_MESSAGE) {
             sendMessage(upd);
             chatDAO.update(
@@ -46,14 +52,15 @@ public class AuthenticationChatHandler implements TelegramChatHandler {
                     c -> c.setChatHandlerState((short)State.WAITING_KEYBOARD_REPLY.ordinal())
             );
         } else if(state == State.WAITING_KEYBOARD_REPLY) {
-            if(!upd.hasCallbackQuery()) return;
             handleKeyboard(upd);
         }
-        chatDAO.close();
     }
 
-    private void handleKeyboard(Update upd) {
-        String option = upd.getCallbackQuery().getData();
+    private void handleKeyboard(ChatUpdate<?> upd) {
+        if(!(upd.getContent() instanceof Update)) return;
+        Update update = (Update)upd.getContent();
+        if(!update.hasCallbackQuery()) return;
+        String option = update.getCallbackQuery().getData();
         if("LOGIN_BUTTON".equals(option)) {
             chatDAO.update(
                     chat,
@@ -71,7 +78,7 @@ public class AuthenticationChatHandler implements TelegramChatHandler {
         }
     }
 
-    private void sendMessage(Update upd) {
+    private void sendMessage(ChatUpdate<?> upd) {
         SendMessage msg = new SendMessage();
         msg.setChatId(chat.getId().toString());
         msg.setText(messageText);

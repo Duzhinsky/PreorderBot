@@ -8,11 +8,11 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class JPAEntityDao<T, Id extends Serializable> implements EntityDAO<T, Id> {
+public class JpaEntityDao<T, Id extends Serializable> implements EntityDao<T, Id> {
     private final EntityManager entityManager;
     private final Class<T> clazz;
 
-    public JPAEntityDao(EntityManager entityManager, Class<T> clazz) {
+    public JpaEntityDao(EntityManager entityManager, Class<T> clazz) {
         this.entityManager = entityManager;
         this.clazz = clazz;
     }
