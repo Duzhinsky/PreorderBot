@@ -2,7 +2,7 @@ package ru.duzhinsky.preorderbot.bot;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.duzhinsky.preorderbot.bot.handlers.ChatUpdate;
+import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
 import ru.duzhinsky.preorderbot.config.Config;
 
 import java.util.Queue;

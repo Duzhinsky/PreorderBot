@@ -1,6 +1,7 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
+import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
 
 public class RegistrationChatHandler extends TelegramChatHandler {
     private enum State {

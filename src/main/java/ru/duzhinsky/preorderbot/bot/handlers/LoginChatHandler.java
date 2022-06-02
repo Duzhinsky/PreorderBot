@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
+import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
 import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
 import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;

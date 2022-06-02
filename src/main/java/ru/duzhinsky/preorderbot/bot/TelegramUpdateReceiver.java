@@ -1,8 +1,8 @@
 package ru.duzhinsky.preorderbot.bot;
 
-import org.checkerframework.checker.guieffect.qual.UIPackage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.handlers.*;
+import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
 import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
 import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;

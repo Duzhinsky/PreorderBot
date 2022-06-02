@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.bot.handlers;
+package ru.duzhinsky.preorderbot.bot.updates;
 
 import lombok.Getter;
 import lombok.Setter;

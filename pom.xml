@@ -72,6 +72,8 @@
             <artifactId>weld-se-core</artifactId>
             <version>3.0.5.Final</version>
         </dependency>
+
+
     </dependencies>
 
 

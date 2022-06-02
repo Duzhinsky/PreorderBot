@@ -6,7 +6,6 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
 import ru.duzhinsky.preorderbot.persistence.EntityManagerUtil;
 
-
 public class Main {
     public static void main(String[] args) {
         try {
@@ -21,6 +20,5 @@ public class Main {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
-
     }
 }

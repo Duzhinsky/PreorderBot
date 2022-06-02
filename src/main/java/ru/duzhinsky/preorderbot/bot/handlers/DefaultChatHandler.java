@@ -1,7 +1,8 @@
 package ru.duzhinsky.preorderbot.bot.handlers;
 
-import org.checkerframework.checker.units.qual.C;
 import ru.duzhinsky.preorderbot.bot.TelegramBot;
+import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
+import ru.duzhinsky.preorderbot.bot.updates.EmptyUpdate;
 import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
 import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
 import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;
@@ -39,6 +40,6 @@ public class DefaultChatHandler extends TelegramChatHandler {
                     c -> c.setChatState(ChatState.MAIN_MENU),
                     c -> c.setChatHandlerState((short)0)
             );
-        bot.getReceiveQueue().add(new ChatUpdate<>(bot, chatId, null));
+        bot.getReceiveQueue().add(new EmptyUpdate(bot, chatId));
     }
 }
