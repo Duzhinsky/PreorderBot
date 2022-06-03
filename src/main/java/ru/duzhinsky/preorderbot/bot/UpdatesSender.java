@@ -8,11 +8,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 @Service
 @Scope("singleton")
-public class TelegramUpdatesSender extends Thread {
-    private final TelegramBot bot;
+public class UpdatesSender extends Thread {
+    private final PreorderBot bot;
 
     @Autowired
-    public TelegramUpdatesSender(TelegramBot bot) {
+    public UpdatesSender(PreorderBot bot) {
         super("UpdatesSender");
         this.bot = bot;
     }

@@ -1,15 +1,24 @@
 package ru.duzhinsky.preorderbot.bot;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 
-@Component
-@ConfigurationProperties(prefix="bot")
-@Getter @Setter
+@Configuration
 public class BotConfig {
-    private String token;
-    private String username;
-}
+    @Bean
+    public UpdateReceiver getReceiver(PreorderBot bot, TgChatRepository repository) {
+        UpdateReceiver receiver = new UpdateReceiver(bot, repository);
+        Thread receiverThread = new Thread(receiver, "Update receiver");
+        receiverThread.start();
+        return receiver;
+    }
 
+    @Bean
+    public UpdatesSender getSender(PreorderBot bot) {
+        UpdatesSender sender = new UpdatesSender(bot);
+        Thread senderThread = new Thread(sender, "Update sender");
+        senderThread.start();
+        return sender;
+    }
+}

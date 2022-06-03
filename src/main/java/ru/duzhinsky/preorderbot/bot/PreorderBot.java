@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Component
 @Scope("singleton")
-public class TelegramBot extends TelegramLongPollingBot {
+public class PreorderBot extends TelegramLongPollingBot {
     private final String username;
     private final String token;
 
@@ -19,9 +19,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final Queue<Update> receiveQueue = new ConcurrentLinkedQueue<>();
 
     @Autowired
-    public TelegramBot(BotConfig config) {
-        this.username = config.getUsername();
-        this.token = config.getToken();
+    public PreorderBot(BotProperties properties) {
+        this.username = properties.getUsername();
+        this.token = properties.getToken();
     }
 
     public Queue<Object> getSendQueue() {

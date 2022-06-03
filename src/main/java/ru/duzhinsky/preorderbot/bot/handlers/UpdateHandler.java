@@ -5,5 +5,5 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 
 public interface UpdateHandler {
     SendMessage handle(Message message);
-    ChatState getHandlerName();
+    ChatState getHandlerScope();
 }

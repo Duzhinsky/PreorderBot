@@ -10,12 +10,12 @@ import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 @Log
 @Service
 @Scope("singleton")
-public class TelegramUpdateReceiver implements Runnable {
-    private final TelegramBot bot;
+public class UpdateReceiver implements Runnable {
+    private final PreorderBot bot;
     private final TgChatRepository tgChatRepository;
 
     @Autowired
-    public TelegramUpdateReceiver(TelegramBot bot, TgChatRepository tgChatRepository) {
+    public UpdateReceiver(PreorderBot bot, TgChatRepository tgChatRepository) {
         this.bot = bot;
         this.tgChatRepository = tgChatRepository;
     }
