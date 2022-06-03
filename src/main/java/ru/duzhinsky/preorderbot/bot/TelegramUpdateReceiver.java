@@ -1,24 +1,30 @@
 package ru.duzhinsky.preorderbot.bot;
 
+import lombok.extern.java.Log;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.duzhinsky.preorderbot.bot.handlers.*;
-import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
-import ru.duzhinsky.preorderbot.persistence.entities.TgChat;
-import ru.duzhinsky.preorderbot.persistence.dao.EntityDao;
-import ru.duzhinsky.preorderbot.persistence.dao.JpaDaoFactory;
+import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 
+@Log
+@Service
+@Scope("singleton")
 public class TelegramUpdateReceiver implements Runnable {
     private final TelegramBot bot;
+    private final TgChatRepository tgChatRepository;
 
-    public TelegramUpdateReceiver(TelegramBot bot) {
+    @Autowired
+    public TelegramUpdateReceiver(TelegramBot bot, TgChatRepository tgChatRepository) {
         this.bot = bot;
+        this.tgChatRepository = tgChatRepository;
     }
 
     @Override
     public void run() {
         while(true) {
-            for (ChatUpdate<?> upd = bot.getReceiveQueue().poll(); upd != null; upd = bot.getReceiveQueue().poll()) {
-                analyze(upd);
+            for (Update upd = bot.getReceiveQueue().poll(); upd != null; upd = bot.getReceiveQueue().poll()) {
+                handleUpdate(upd);
             }
             try {
                 int WAIT_FOR_NEW_MESSAGE_DELAY = 100;
@@ -30,38 +36,14 @@ public class TelegramUpdateReceiver implements Runnable {
         }
     }
 
-    private void analyze(ChatUpdate<?> update) {
-        Long chatId = update.getChatId();
-        EntityDao<TgChat, Long> chatDAO = new JpaDaoFactory<TgChat, Long>().getDao(TgChat.class);
-        TgChat chat = chatDAO.find(chatId);
-        if(chat == null) {
-            TgChat newChat = new TgChat();
-            newChat.setId(chatId);
-            chatDAO.persist(newChat);
-            chat = newChat;
-        }
-        if(update.getContent() instanceof Update) {
-            Update upd = (Update)update.getContent();
-            if(upd.hasMessage() && "/start".equals(upd.getMessage().getText()))
-                chatDAO.update(chat, c -> c.setChatState(null));
-        }
-        chatDAO.close();
-        TelegramChatHandler chatHandler = getHandler(chat.getChatState(), chat.getChatHandlerState());
-        new Thread(() -> chatHandler.handle(update)).start();
-    }
+    private void handleUpdate(Update update) {
+        log.info("update received");
+        if(update.hasCallbackQuery()) {
 
-    private TelegramChatHandler getHandler(ChatState handler, Short handlerState) {
-        if(handler == null) return new DefaultChatHandler(bot, (short)0);
-        switch (handler) {
-            case AUTHENTICATION:
-                return new AuthenticationChatHandler(bot, handlerState);
-            case LOGIN:
-                return new LoginChatHandler(bot, handlerState);
-            case REGISTRATION:
-                return new RegistrationChatHandler(bot, handlerState);
-            default:
-                return new DefaultChatHandler(bot, (short)0);
+        }
+
+        if(update.hasMessage()) {
+
         }
     }
-
 }

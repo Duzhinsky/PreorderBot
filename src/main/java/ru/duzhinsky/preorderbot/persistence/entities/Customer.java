@@ -1,8 +1,9 @@
 package ru.duzhinsky.preorderbot.persistence.entities;
 
-import jakarta.persistence.*;
 import lombok.*;
+import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 
+import javax.persistence.*;
 import java.util.Set;
 
 @Entity

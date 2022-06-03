@@ -1,63 +1,49 @@
 package ru.duzhinsky.preorderbot.bot;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import ru.duzhinsky.preorderbot.bot.updates.ChatUpdate;
-import ru.duzhinsky.preorderbot.config.Config;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
-
+@Component
+@Scope("singleton")
 public class TelegramBot extends TelegramLongPollingBot {
-    private static final String BOT_TOKEN;
-    private static final String BOT_USERNAME;
+    private final String username;
+    private final String token;
 
     private final Queue<Object> sendQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<ChatUpdate<?>> receiveQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Update> receiveQueue = new ConcurrentLinkedQueue<>();
 
-    static {
-        BOT_TOKEN = Config.getProperty("token","");
-        BOT_USERNAME = Config.getProperty("username","");
-    }
-
-    public TelegramBot() {
-        TelegramUpdateReceiver receiver = new TelegramUpdateReceiver(this);
-        Thread receiverThread = new Thread(receiver);
-        receiverThread.setDaemon(true);
-        receiverThread.setName("MsgReceiver");
-        receiverThread.setPriority(3);
-        receiverThread.start();
-
-        TelegramUpdatesSender sender = new TelegramUpdatesSender(this);
-        Thread senderThread = new Thread(sender);
-        senderThread.setDaemon(true);
-        senderThread.setName("MsgSender");
-        senderThread.setPriority(1);
-        senderThread.start();
+    @Autowired
+    public TelegramBot(BotConfig config) {
+        this.username = config.getUsername();
+        this.token = config.getToken();
     }
 
     public Queue<Object> getSendQueue() {
         return sendQueue;
     }
 
-    public Queue<ChatUpdate<?>> getReceiveQueue() {
+    public Queue<Update> getReceiveQueue() {
         return receiveQueue;
     }
 
     @Override
     public String getBotUsername() {
-        return BOT_USERNAME;
+        return username;
     }
 
     @Override
     public String getBotToken() {
-        return BOT_TOKEN;
+        return token;
     }
 
     @Override
     public void onUpdateReceived(Update update) {
-        receiveQueue.add(new ChatUpdate<Update>(this, getChatId(update), update));
+        receiveQueue.add(update);
     }
 }

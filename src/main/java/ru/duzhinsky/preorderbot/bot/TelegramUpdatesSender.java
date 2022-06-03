@@ -1,12 +1,19 @@
 package ru.duzhinsky.preorderbot.bot;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-public class TelegramUpdatesSender implements Runnable {
+@Service
+@Scope("singleton")
+public class TelegramUpdatesSender extends Thread {
     private final TelegramBot bot;
 
+    @Autowired
     public TelegramUpdatesSender(TelegramBot bot) {
+        super("UpdatesSender");
         this.bot = bot;
     }
 
