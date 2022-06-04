@@ -48,15 +48,14 @@ public class UpdateReceiver implements Runnable {
         Long chatId = TelegramUtils.getChatId(update);
         tgChatRepository.findById(chatId).ifPresentOrElse(
                 chat -> {
-                    ChatState state = chat.getChatState();
-                    handlersContext.handleUpdate(state, update);
+                    handlersContext.handleUpdate(chat, update);
                 },
                 () -> {
                     TgChat newChat = new TgChat();
                     newChat.setId(chatId);
                     newChat.setChatState(ChatState.DEFAULT);
                     tgChatRepository.save(newChat);
-                    handlersContext.handleUpdate(newChat.getChatState(), update);
+                    handlersContext.handleUpdate(newChat, update);
                 }
         );
     }

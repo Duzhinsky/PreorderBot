@@ -13,7 +13,8 @@ import javax.persistence.*;
 @ToString
 public class ValidationCode {
     @Id
-    @Column(name = "id")
+    @Column(name="id", nullable = false, unique = true)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "code", nullable = false)

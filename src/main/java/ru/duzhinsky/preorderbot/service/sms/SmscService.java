@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-@Service
+@Service("SmscSerivce")
 public class SmscService implements SmsService {
     private final UriBuilder sendSMSURIBuilder;
 

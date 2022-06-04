@@ -8,7 +8,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import ru.duzhinsky.preorderbot.bot.PreorderBot;
-import ru.duzhinsky.preorderbot.bot.TelegramUtils;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
@@ -28,24 +27,24 @@ public class AuthenticationHandler implements UpdateHandler {
     }
 
     @Override
-    public void handle(Update update) {
-        TgChat chat = tgChatRepository.findById(TelegramUtils.getChatId(update)).get();
+    public void handle(TgChat chat, Update update) {
         ChatState state = chat.getChatState();
         if(state == ChatState.AUTHENTICATION) {
             sendAuthMessage(chat);
             chat.setChatState(ChatState.AUTHENTICATION_WAIT_REPLY);
             tgChatRepository.save(chat);
         } else if(state == ChatState.AUTHENTICATION_WAIT_REPLY) {
+            if(update == null) return;
             if(!update.hasMessage()) return;
             String message = update.getMessage().getText();
             if(message.equals("Войти")) {
                 chat.setChatState(ChatState.LOGIN);
                 tgChatRepository.save(chat);
-                bot.getReceiveQueue().add(update);
+                bot.getRedirectionQueue().add(chat);
             } else if(message.equals("Регистрация")) {
                 chat.setChatState(ChatState.REGISTRATION);
                 tgChatRepository.save(chat);
-                bot.getReceiveQueue().add(update);
+                bot.getRedirectionQueue().add(chat);
             }
         }
     }

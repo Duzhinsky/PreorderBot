@@ -3,6 +3,7 @@ package ru.duzhinsky.preorderbot.service.handlers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,13 +18,14 @@ public class HandlersContext {
         handlers.forEach(handler -> this.handlers.put(handler.getHandlerScope(), handler));
     }
 
-    public void handleUpdate(ChatState state, Update update) {
+    public void handleUpdate(TgChat chat, Update update) {
+        var state = chat.getChatState();
         if(isDefaultState(state))
-            handlers.get(ChatState.DEFAULT).handle(update);
+            handlers.get(ChatState.DEFAULT).handle(chat, update);
         else if(isAuthenticationState(state))
-            handlers.get(ChatState.AUTHENTICATION).handle(update);
+            handlers.get(ChatState.AUTHENTICATION).handle(chat, update);
         else if(isLoginState(state))
-            handlers.get(ChatState.LOGIN).handle(update);
+            handlers.get(ChatState.LOGIN).handle(chat, update);
     }
 
     private boolean isLoginState(ChatState state) {

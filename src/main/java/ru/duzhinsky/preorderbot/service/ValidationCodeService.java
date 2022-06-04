@@ -10,11 +10,11 @@ import java.util.Date;
 import java.util.Random;
 
 @Service
-public class ValidationCodeGenerator {
+public class ValidationCodeService {
     private final ValidationCodeRepository validationCodeRepository;
 
     @Autowired
-    public ValidationCodeGenerator(ValidationCodeRepository validationCodeRepository) {
+    public ValidationCodeService(ValidationCodeRepository validationCodeRepository) {
         this.validationCodeRepository = validationCodeRepository;
     }
 
@@ -27,5 +27,9 @@ public class ValidationCodeGenerator {
         code.setCode(generated);
         validationCodeRepository.save(code);
         return generated;
+    }
+
+    public Integer getValidationCode(TgChat chat) {
+        return validationCodeRepository.findTopByChatOrderByCreatedDesc(chat).getCode();
     }
 }

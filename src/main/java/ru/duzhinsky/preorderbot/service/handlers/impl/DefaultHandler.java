@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.PreorderBot;
-import ru.duzhinsky.preorderbot.bot.TelegramUtils;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
@@ -22,14 +21,13 @@ public class DefaultHandler implements UpdateHandler {
     }
 
     @Override
-    public void handle(Update update) {
-        TgChat chat = tgChatRepository.findById(TelegramUtils.getChatId(update)).get();
+    public void handle(TgChat chat, Update update) {
         if(chat.getCustomer() == null)
             chat.setChatState(ChatState.AUTHENTICATION);
         else
             chat.setChatState(ChatState.MAIN_MENU);
         tgChatRepository.save(chat);
-        preorderBot.getReceiveQueue().add(update);
+        preorderBot.getRedirectionQueue().add(chat);
     }
 
     @Override

@@ -1,45 +1,31 @@
 package ru.duzhinsky.preorderbot.bot;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Component
 @Scope("singleton")
+@Getter
 public class PreorderBot extends TelegramLongPollingBot {
-    private final String username;
-    private final String token;
+    private final String botUsername;
+    private final String botToken;
 
     private final Queue<Object> sendQueue = new ConcurrentLinkedQueue<>();
     private final Queue<Update> receiveQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<TgChat> redirectionQueue = new ConcurrentLinkedQueue<>();
 
     @Autowired
     public PreorderBot(BotProperties properties) {
-        this.username = properties.getUsername();
-        this.token = properties.getToken();
-    }
-
-    public Queue<Object> getSendQueue() {
-        return sendQueue;
-    }
-
-    public Queue<Update> getReceiveQueue() {
-        return receiveQueue;
-    }
-
-    @Override
-    public String getBotUsername() {
-        return username;
-    }
-
-    @Override
-    public String getBotToken() {
-        return token;
+        this.botUsername = properties.getUsername();
+        this.botToken = properties.getToken();
     }
 
     @Override

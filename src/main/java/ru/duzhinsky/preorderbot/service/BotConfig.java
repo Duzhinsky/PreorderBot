@@ -17,6 +17,14 @@ public class BotConfig {
     }
 
     @Bean
+    public RedirectionReceiver getRedirectionReceiver(PreorderBot bot, HandlersContext handlersContext) {
+        RedirectionReceiver receiver = new RedirectionReceiver(bot, handlersContext);
+        Thread receiverThread = new Thread(receiver, "Redirections receiver");
+        receiverThread.start();
+        return receiver;
+    }
+
+    @Bean
     public UpdatesSender getSender(PreorderBot bot) {
         UpdatesSender sender = new UpdatesSender(bot);
         Thread senderThread = new Thread(sender, "Update sender");
