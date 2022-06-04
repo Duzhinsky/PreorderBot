@@ -1,8 +1,7 @@
 package ru.duzhinsky.preorderbot.persistence.entities.tgchat;
 
-
 import lombok.*;
-import ru.duzhinsky.preorderbot.bot.handlers.ChatState;
+import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.persistence.entities.Customer;
 
 import javax.persistence.*;
@@ -21,9 +20,6 @@ public class TgChat {
     @Column(name = "handler")
     @Enumerated(EnumType.STRING)
     private ChatState chatState;
-
-    @Column(name = "handler_state")
-    private Integer chatHandlerState;
 
     @ManyToOne
     @JoinColumn(name="customer_id")

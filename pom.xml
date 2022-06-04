@@ -53,13 +53,6 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
-
-        <dependency>
-            <groupId>org.telegram</groupId>
-            <artifactId>telegrambots-abilities</artifactId>
-            <version>6.0.1</version>
-        </dependency>
     </dependencies>
 
 

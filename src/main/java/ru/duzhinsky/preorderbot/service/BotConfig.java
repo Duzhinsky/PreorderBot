@@ -1,14 +1,16 @@
-package ru.duzhinsky.preorderbot.bot;
+package ru.duzhinsky.preorderbot.service;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.duzhinsky.preorderbot.bot.PreorderBot;
+import ru.duzhinsky.preorderbot.service.handlers.HandlersContext;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 
 @Configuration
 public class BotConfig {
     @Bean
-    public UpdateReceiver getReceiver(PreorderBot bot, TgChatRepository repository) {
-        UpdateReceiver receiver = new UpdateReceiver(bot, repository);
+    public UpdateReceiver getReceiver(PreorderBot bot, TgChatRepository repository, HandlersContext context) {
+        UpdateReceiver receiver = new UpdateReceiver(bot, context, repository);
         Thread receiverThread = new Thread(receiver, "Update receiver");
         receiverThread.start();
         return receiver;
