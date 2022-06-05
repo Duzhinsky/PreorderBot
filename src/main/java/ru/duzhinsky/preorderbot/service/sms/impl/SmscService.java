@@ -1,7 +1,9 @@
-package ru.duzhinsky.preorderbot.service.sms;
+package ru.duzhinsky.preorderbot.service.sms.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.duzhinsky.preorderbot.service.sms.SmsService;
+import ru.duzhinsky.preorderbot.service.sms.SmsStatus;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;

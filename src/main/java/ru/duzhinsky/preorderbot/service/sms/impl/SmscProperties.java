@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.service.sms;
+package ru.duzhinsky.preorderbot.service.sms.impl;
 
 import lombok.Getter;
 import lombok.Setter;

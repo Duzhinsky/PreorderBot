@@ -20,12 +20,20 @@ public class HandlersContext {
 
     public void handleUpdate(TgChat chat, Update update) {
         var state = chat.getChatState();
-        if(isDefaultState(state))
+        if(isStartCommand(update))
+            handlers.get(ChatState.DEFAULT).handle(chat, update);
+        else if(isDefaultState(state))
             handlers.get(ChatState.DEFAULT).handle(chat, update);
         else if(isAuthenticationState(state))
             handlers.get(ChatState.AUTHENTICATION).handle(chat, update);
         else if(isLoginState(state))
             handlers.get(ChatState.LOGIN).handle(chat, update);
+    }
+
+    private boolean isStartCommand(Update update) {
+        if(update == null) return false;
+        if(!update.hasMessage()) return false;
+        return update.getMessage().getText().equals("/start");
     }
 
     private boolean isLoginState(ChatState state) {

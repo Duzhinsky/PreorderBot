@@ -1,7 +1,9 @@
-package ru.duzhinsky.preorderbot.service.sms;
+package ru.duzhinsky.preorderbot.service.sms.impl;
 
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
+import ru.duzhinsky.preorderbot.service.sms.SmsService;
+import ru.duzhinsky.preorderbot.service.sms.SmsStatus;
 
 import java.util.function.Consumer;
 import java.util.logging.Level;
