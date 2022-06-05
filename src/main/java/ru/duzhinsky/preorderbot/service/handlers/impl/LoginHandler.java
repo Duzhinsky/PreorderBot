@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import ru.duzhinsky.preorderbot.bot.PreorderBot;
+import ru.duzhinsky.preorderbot.persistence.entities.customer.CustomerRepository;
 import ru.duzhinsky.preorderbot.service.ValidationCodeService;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
@@ -26,16 +27,19 @@ import java.util.logging.Level;
 @Service
 public class LoginHandler implements UpdateHandler {
     private final TgChatRepository tgChatRepository;
+    private final CustomerRepository customerRepository;
     private final PreorderBot preorderBot;
     private final SmsService smsService;
     private final ValidationCodeService validationCodeService;
 
     @Autowired
     public LoginHandler(TgChatRepository tgChatRepository,
+                        CustomerRepository customerRepository,
                         PreorderBot preorderBot,
                         @Qualifier("DebugSmsSerivce") SmsService smsService,
                         ValidationCodeService validationCodeGenerator) {
         this.tgChatRepository = tgChatRepository;
+        this.customerRepository = customerRepository;
         this.preorderBot = preorderBot;
         this.smsService = smsService;
         this.validationCodeService = validationCodeGenerator;
@@ -81,15 +85,31 @@ public class LoginHandler implements UpdateHandler {
             Integer inputCode = Integer.parseInt(message);
             Integer code = validationCodeService.getValidationCode(chat);
             if(inputCode.equals(code)) {
-                SendMessage remover = new SendMessage();
-                remover.setText("Вход произошел успешно!");
-                remover.setChatId(chat.getId().toString());
-                ReplyKeyboardRemove keyboardRemove = new ReplyKeyboardRemove();
-                keyboardRemove.setRemoveKeyboard(true);
-                remover.setReplyMarkup(keyboardRemove);
-                preorderBot.getSendQueue().add(remover);
-                chat.setChatState(ChatState.MAIN_MENU);
-                tgChatRepository.save(chat);
+
+                customerRepository.findByPhoneNumber(validationCodeService.getValidationPhone(chat)).ifPresentOrElse(
+                        customer -> {
+                            chat.setCustomer(customer);
+                            chat.setChatState(ChatState.MAIN_MENU);
+                            tgChatRepository.save(chat);
+
+                            SendMessage remover = new SendMessage();
+                            remover.setText("Вход произошел успешно!");
+                            remover.setChatId(chat.getId().toString());
+                            ReplyKeyboardRemove keyboardRemove = new ReplyKeyboardRemove();
+                            keyboardRemove.setRemoveKeyboard(true);
+                            remover.setReplyMarkup(keyboardRemove);
+                            preorderBot.getSendQueue().add(remover);
+                        },
+                        () -> {
+                            chat.setChatState(ChatState.AUTHENTICATION);
+                            tgChatRepository.save(chat);
+
+                            SendMessage errMess = new SendMessage();
+                            errMess.setText("Произошла ошибка! Пользователь с таким номером не найден.");
+                            errMess.setChatId(chat.getId().toString());
+                            preorderBot.getSendQueue().add(errMess);
+                        }
+                );
             } else {
                 SendMessage msg = new SendMessage();
                 msg.setChatId(chat.getId().toString());
@@ -114,8 +134,16 @@ public class LoginHandler implements UpdateHandler {
             msg.setReplyMarkup(getBackKeyboard());
             preorderBot.getSendQueue().add(msg);
         } else {
-            Integer code = validationCodeService.generate(chat, phone);
-            smsService.sendSms(phone, "Your code is: " + code, status -> smsCallback(chat, status));
+            if(customerRepository.findByPhoneNumber(phone).isEmpty()) {
+                SendMessage msg = new SendMessage();
+                msg.setChatId(chat.getId().toString());
+                msg.setText("Пользователь с таким номером не найден! Введите другой номер телефона.");
+                msg.setReplyMarkup(getBackKeyboard());
+                preorderBot.getSendQueue().add(msg);
+            } else {
+                Integer code = validationCodeService.generate(chat, phone);
+                smsService.sendSms(phone, "Your code is: " + code, status -> smsCallback(chat, status));
+            }
         }
     }
 

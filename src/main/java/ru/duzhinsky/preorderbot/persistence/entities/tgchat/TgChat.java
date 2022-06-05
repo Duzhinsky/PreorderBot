@@ -2,7 +2,7 @@ package ru.duzhinsky.preorderbot.persistence.entities.tgchat;
 
 import lombok.*;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
-import ru.duzhinsky.preorderbot.persistence.entities.Customer;
+import ru.duzhinsky.preorderbot.persistence.entities.customer.Customer;
 
 import javax.persistence.*;
 

@@ -32,4 +32,8 @@ public class ValidationCodeService {
     public Integer getValidationCode(TgChat chat) {
         return validationCodeRepository.findTopByChatOrderByCreatedDesc(chat).getCode();
     }
+
+    public String getValidationPhone(TgChat chat) {
+        return validationCodeRepository.findTopByChatOrderByCreatedDesc(chat).getPhone();
+    }
 }

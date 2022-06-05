@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Component
 public class HandlersContext {
-    private Map<ChatState, UpdateHandler> handlers = new HashMap<>();
+    private final Map<ChatState, UpdateHandler> handlers = new HashMap<>();
 
     @Autowired
     public HandlersContext(List<UpdateHandler> handlers) {

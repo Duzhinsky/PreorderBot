@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.persistence.entities;
+package ru.duzhinsky.preorderbot.persistence.entities.customer;
 
 import lombok.*;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
