@@ -197,7 +197,11 @@ public class LoginHandler implements UpdateHandler {
     }
 
     @Override
-    public ChatState getHandlerScope() {
-        return ChatState.LOGIN;
+    public List<ChatState> getHandlerScope() {
+        return List.of(
+                ChatState.LOGIN,
+                ChatState.LOGIN_WAIT_CODE,
+                ChatState.LOGIN_WAIT_PHONE
+        );
     }
 }

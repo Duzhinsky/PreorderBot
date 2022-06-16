@@ -4,6 +4,7 @@ import lombok.*;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 
 import javax.persistence.*;
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -20,6 +21,13 @@ public class Customer {
 
     @Column(name = "phone", nullable = false, unique = true)
     private String phoneNumber;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "birthday")
+    @Temporal(TemporalType.DATE)
+    private Date birthday;
 
     @ToString.Exclude
     @OneToMany(mappedBy = "customer")

@@ -9,6 +9,8 @@ import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 
+import java.util.List;
+
 @Service
 public class DefaultHandler implements UpdateHandler {
     private final TgChatRepository tgChatRepository;
@@ -31,7 +33,9 @@ public class DefaultHandler implements UpdateHandler {
     }
 
     @Override
-    public ChatState getHandlerScope() {
-        return ChatState.DEFAULT;
+    public List<ChatState> getHandlerScope() {
+        return List.of(
+                ChatState.DEFAULT
+        );
     }
 }

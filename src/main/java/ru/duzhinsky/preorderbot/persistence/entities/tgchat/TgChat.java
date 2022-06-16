@@ -1,6 +1,7 @@
 package ru.duzhinsky.preorderbot.persistence.entities.tgchat;
 
 import lombok.*;
+import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistration;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.persistence.entities.customer.Customer;
 
@@ -11,10 +12,10 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Getter @Setter
 @EqualsAndHashCode(of={"id"})
-@ToString
+@ToString(exclude = "regInfo")
 public class TgChat {
     @Id
-    @Column(name="chat_id", nullable = false, unique = true)
+    @Column(name= "id", nullable = false, unique = true)
     private Long id;
 
     @Column(name = "handler")
@@ -24,4 +25,8 @@ public class TgChat {
     @ManyToOne
     @JoinColumn(name="customer_id")
     private Customer customer;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "id", referencedColumnName = "chat_id")
+    private TgRegistration regInfo;
 }

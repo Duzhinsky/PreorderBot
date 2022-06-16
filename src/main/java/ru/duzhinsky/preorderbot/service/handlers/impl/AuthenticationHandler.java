@@ -76,7 +76,10 @@ public class AuthenticationHandler implements UpdateHandler {
     }
 
     @Override
-    public ChatState getHandlerScope() {
-        return ChatState.AUTHENTICATION;
+    public List<ChatState> getHandlerScope() {
+        return List.of(
+                ChatState.AUTHENTICATION,
+                ChatState.AUTHENTICATION_WAIT_REPLY
+        );
     }
 }
