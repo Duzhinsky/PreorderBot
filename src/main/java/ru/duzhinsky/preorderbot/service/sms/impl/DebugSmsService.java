@@ -1,6 +1,7 @@
 package ru.duzhinsky.preorderbot.service.sms.impl;
 
 import lombok.extern.java.Log;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import ru.duzhinsky.preorderbot.service.sms.SmsService;
 import ru.duzhinsky.preorderbot.service.sms.SmsStatus;
@@ -10,6 +11,7 @@ import java.util.logging.Level;
 
 @Log
 @Service("DebugSmsSerivce")
+@Primary
 public class DebugSmsService implements SmsService {
     @Override
     public void sendSms(String phoneNumber, String text, Consumer<SmsStatus> callback) {

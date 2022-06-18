@@ -9,6 +9,7 @@ import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -34,8 +35,9 @@ public class DefaultHandler implements UpdateHandler {
 
     @Override
     public List<ChatState> getHandlerScope() {
-        return List.of(
-                ChatState.DEFAULT
-        );
+        List<ChatState> scope = new ArrayList<>();
+        scope.add(null);
+        scope.add(ChatState.DEFAULT);
+        return scope;
     }
 }

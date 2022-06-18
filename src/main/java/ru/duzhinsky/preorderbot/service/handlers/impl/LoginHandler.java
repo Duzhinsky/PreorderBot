@@ -2,12 +2,9 @@ package ru.duzhinsky.preorderbot.service.handlers.impl;
 
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import ru.duzhinsky.preorderbot.bot.PreorderBot;
@@ -17,11 +14,11 @@ import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
-import ru.duzhinsky.preorderbot.service.sms.SmsService;
 import ru.duzhinsky.preorderbot.service.sms.SmsStatus;
+import ru.duzhinsky.preorderbot.utils.Phone;
+import ru.duzhinsky.preorderbot.utils.messages.MessageBuilder;
 
 import java.util.List;
-import java.util.logging.Level;
 
 @Log
 @Service
@@ -29,19 +26,16 @@ public class LoginHandler implements UpdateHandler {
     private final TgChatRepository tgChatRepository;
     private final CustomerRepository customerRepository;
     private final PreorderBot preorderBot;
-    private final SmsService smsService;
     private final ValidationCodeService validationCodeService;
 
     @Autowired
     public LoginHandler(TgChatRepository tgChatRepository,
                         CustomerRepository customerRepository,
                         PreorderBot preorderBot,
-                        @Qualifier("DebugSmsSerivce") SmsService smsService,
                         ValidationCodeService validationCodeGenerator) {
         this.tgChatRepository = tgChatRepository;
         this.customerRepository = customerRepository;
         this.preorderBot = preorderBot;
-        this.smsService = smsService;
         this.validationCodeService = validationCodeGenerator;
     }
 
@@ -49,23 +43,9 @@ public class LoginHandler implements UpdateHandler {
     public void handle(TgChat chat, Update update) {
         var state = chat.getChatState();
         if(state == ChatState.LOGIN) {
-            sendRequestPhoneMessage(chat, "Для входа введите номер телефона");
+            sendRequestPhoneMessage(chat);
         } else if(state == ChatState.LOGIN_WAIT_PHONE) {
-            if(update == null) return;
-            if(!update.hasMessage()) return;
-            String message = update.getMessage().getText();
-            if(message.equals("Назад")) {
-                chat.setChatState(ChatState.AUTHENTICATION);
-                tgChatRepository.save(chat);
-                preorderBot.getRedirectionQueue().add(chat);
-            } else {
-                StringBuilder phone = new StringBuilder();
-                for(char c : message.toCharArray())
-                    if(Character.isDigit(c))
-                        phone.append(c);
-                if (phone.length() > 0 && phone.charAt(0) == '8') phone.setCharAt(0,'7');
-                sendCode(chat, phone.toString());
-            }
+            checkPhone(chat, update);
         } else if(state == ChatState.LOGIN_WAIT_CODE) {
             if(update == null) return;
             if(!update.hasMessage()) return;
@@ -80,107 +60,126 @@ public class LoginHandler implements UpdateHandler {
         }
     }
 
-    private void checkCode(TgChat chat, String message) {
-        try {
-            Integer inputCode = Integer.parseInt(message);
-            Integer code = validationCodeService.getValidationCode(chat);
-            if(inputCode.equals(code)) {
-
-                customerRepository.findByPhoneNumber(validationCodeService.getValidationPhone(chat)).ifPresentOrElse(
-                        customer -> {
-                            chat.setCustomer(customer);
-                            chat.setChatState(ChatState.MAIN_MENU);
-                            tgChatRepository.save(chat);
-
-                            SendMessage remover = new SendMessage();
-                            remover.setText("Вход произошел успешно!");
-                            remover.setChatId(chat.getId().toString());
-                            ReplyKeyboardRemove keyboardRemove = new ReplyKeyboardRemove();
-                            keyboardRemove.setRemoveKeyboard(true);
-                            remover.setReplyMarkup(keyboardRemove);
-                            preorderBot.getSendQueue().add(remover);
-                        },
-                        () -> {
-                            chat.setChatState(ChatState.AUTHENTICATION);
-                            tgChatRepository.save(chat);
-
-                            SendMessage errMess = new SendMessage();
-                            errMess.setText("Произошла ошибка! Пользователь с таким номером не найден.");
-                            errMess.setChatId(chat.getId().toString());
-                            preorderBot.getSendQueue().add(errMess);
-                        }
-                );
-            } else {
-                SendMessage msg = new SendMessage();
-                msg.setChatId(chat.getId().toString());
-                msg.setText("Неверный код! Попробуйте еще раз!");
-                msg.setReplyMarkup(getBackKeyboard());
-                preorderBot.getSendQueue().add(msg);
-            }
-        } catch(NumberFormatException e) {
-            SendMessage msg = new SendMessage();
-            msg.setChatId(chat.getId().toString());
-            msg.setText("Неверный формат кода! Попробуйте еще раз!");
-            msg.setReplyMarkup(getBackKeyboard());
-            preorderBot.getSendQueue().add(msg);
+    private void checkPhone(TgChat chat, Update update) {
+        if(!update.hasMessage()) return;
+        String message = update.getMessage().getText();
+        if(message.equals("Назад")) {
+            chat.setChatState(ChatState.AUTHENTICATION);
+            tgChatRepository.save(chat);
+            preorderBot.getRedirectionQueue().add(chat);
+        } else {
+            sendCode(chat, message);
         }
     }
 
-    private void sendCode(TgChat chat, String phone) {
-        if(!isValidPhone(phone)) {
-            SendMessage msg = new SendMessage();
-            msg.setChatId(chat.getId().toString());
-            msg.setText("Неверный формат номера телефона!");
-            msg.setReplyMarkup(getBackKeyboard());
-            preorderBot.getSendQueue().add(msg);
-        } else {
-            if(customerRepository.findByPhoneNumber(phone).isEmpty()) {
-                SendMessage msg = new SendMessage();
-                msg.setChatId(chat.getId().toString());
-                msg.setText("Пользователь с таким номером не найден! Введите другой номер телефона.");
-                msg.setReplyMarkup(getBackKeyboard());
-                preorderBot.getSendQueue().add(msg);
+    private void checkCode(TgChat chat, String message) {
+        var codeString = message.replaceAll("[^\\d]", "");
+        try {
+            Integer inputCode = Integer.parseInt(codeString);
+            Integer code = validationCodeService.getValidationCode(chat);
+            if(inputCode.equals(code)) {
+                authorize(chat);
             } else {
-                Integer code = validationCodeService.generate(chat, phone);
-                smsService.sendSms(phone, "Your code is: " + code, status -> smsCallback(chat, status));
+                preorderBot.addMessage(
+                        new MessageBuilder()
+                                .setChatId(chat.getId())
+                                .setText("Неверный код! Попробуйте еще раз!")
+                                .setReplyMarkup(getBackKeyboard())
+                );
+            }
+        } catch(NumberFormatException e) {
+            preorderBot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Неверный формат кода! Попробуйте еще раз!")
+                            .setReplyMarkup(getBackKeyboard())
+            );
+        }
+    }
+
+    private void authorize(TgChat chat) {
+        customerRepository.findByPhoneNumber(validationCodeService.getValidationPhone(chat)).ifPresentOrElse(
+                customer -> {
+                    chat.setCustomer(customer);
+                    chat.setChatState(ChatState.MAIN_MENU);
+                    tgChatRepository.save(chat);
+                    preorderBot.addMessage(
+                            new MessageBuilder()
+                                    .setChatId(chat.getId())
+                                    .setText("Вход произошел успешно")
+                                    .removeKeyboard()
+                    );
+                },
+                () -> {
+                    chat.setChatState(ChatState.AUTHENTICATION);
+                    tgChatRepository.save(chat);
+                    preorderBot.addMessage(
+                            new MessageBuilder()
+                                    .setChatId(chat.getId())
+                                    .setText("Произошла ошибка! Пользователь с таким номером не найден.")
+                                    .removeKeyboard()
+                    );
+                }
+        );
+    }
+
+    private void sendCode(TgChat chat, String message) {
+        var phone = Phone.findPhone(message);
+        if(phone.isEmpty()) {
+            preorderBot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Неверный формат номера телефона!")
+                            .setReplyMarkup(getBackKeyboard())
+            );
+        } else {
+            if(customerRepository.findByPhoneNumber(phone.get().getPhone()).isEmpty()) {
+                preorderBot.addMessage(
+                        new MessageBuilder()
+                                .setChatId(chat.getId())
+                                .setText("Пользователь с таким номером не найден! Введите другой номер телефона.")
+                                .setReplyMarkup(getBackKeyboard())
+                );
+            } else {
+                validationCodeService.generate(chat, phone.get().getPhone(), status -> smsCallback(chat, status));
             }
         }
     }
 
     private void smsCallback(TgChat chat, SmsStatus status) {
         if(status == SmsStatus.ERROR) {
-            log.log(Level.WARNING, String.format("An error occurred while sending a message to the chat %d", chat.getId()));
-            SendMessage msg = new SendMessage();
-            msg.setChatId(chat.getId().toString());
-            msg.setText("Произошла ошибка при отправке кода подтверждения. Попробуйте позже");
-            preorderBot.getSendQueue().add(msg);
+            log.warning(String.format("An error occurred while sending a message to the chat %d", chat.getId()));
             chat.setChatState(ChatState.AUTHENTICATION);
             tgChatRepository.save(chat);
+            preorderBot.addMessage(
+                new MessageBuilder()
+                        .setChatId(chat.getId())
+                        .setText("Произошла ошибка при отправке кода подтверждения. Попробуйте позже")
+                        .removeKeyboard()
+            );
             preorderBot.getRedirectionQueue().add(chat);
         } else if(status == SmsStatus.DELIVERED) {
-            log.log(Level.WARNING, String.format("SMS to the chat %d was delivered successful", chat.getId()));
-            SendMessage msg = new SendMessage();
-            msg.setChatId(chat.getId().toString());
-            msg.setText("Код для входа был отправлен по вашему номеру телефона. Введите его в ответ на это сообщение.");
-            msg.setReplyMarkup(getBackKeyboard());
-            preorderBot.getSendQueue().add(msg);
+            log.warning(String.format("SMS to the chat %d was delivered successful", chat.getId()));
             chat.setChatState(ChatState.LOGIN_WAIT_CODE);
             tgChatRepository.save(chat);
+            preorderBot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Код для входа был отправлен по вашему номеру телефона. Введите его в ответ на это сообщение.")
+                            .setReplyMarkup(getBackKeyboard())
+            );
         }
     }
 
-    private boolean isValidPhone(String phone) {
-        return phone.matches("7\\d{10}");
-    }
-
-    private void sendRequestPhoneMessage(TgChat chat, String text) {
-        SendMessage msg = new SendMessage();
-        msg.setChatId(chat.getId().toString());
-        msg.setText(text);
-        msg.setReplyMarkup(getBackKeyboard());
-        preorderBot.getSendQueue().add(msg);
+    private void sendRequestPhoneMessage(TgChat chat) {
         chat.setChatState(ChatState.LOGIN_WAIT_PHONE);
         tgChatRepository.save(chat);
+        preorderBot.addMessage(
+                new MessageBuilder()
+                        .setChatId(chat.getId())
+                        .setText("Для входа введите номер телефона")
+                        .setReplyMarkup(getBackKeyboard())
+        );
     }
 
     private ReplyKeyboardMarkup getBackKeyboard() {

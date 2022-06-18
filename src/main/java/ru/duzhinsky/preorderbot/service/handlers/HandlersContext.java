@@ -14,10 +14,10 @@ public class HandlersContext {
     private final Map<ChatState, UpdateHandler> handlers = new HashMap<>();
 
     @Autowired
-    public HandlersContext(List<UpdateHandler> handlers) {
-        handlers.forEach(handler -> {
-            handler.getHandlerScope().forEach(scope -> this.handlers.put(scope, handler));
-        });
+    public HandlersContext(List<UpdateHandler> handlerList) {
+        handlerList.forEach(
+                handler -> handler.getHandlerScope().forEach(scope -> this.handlers.put(scope, handler))
+        );
     }
 
     public void handleUpdate(TgChat chat, Update update) {

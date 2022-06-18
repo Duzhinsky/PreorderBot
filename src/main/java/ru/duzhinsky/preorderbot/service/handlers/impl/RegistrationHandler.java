@@ -3,7 +3,6 @@ package ru.duzhinsky.preorderbot.service.handlers.impl;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
@@ -15,6 +14,7 @@ import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistrati
 import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistrationRepository;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
+import ru.duzhinsky.preorderbot.utils.Phone;
 import ru.duzhinsky.preorderbot.utils.messages.MessageBuilder;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class RegistrationHandler implements UpdateHandler {
                 checkName(chat);
                 break;
             case REGISTRATION_WAIT_PHONE:
-                checkPhone(chat);
+                checkPhone(chat, update);
                 break;
             case REGISTRATION_WAIT_CODE:
                 checkPhoneCode(chat);
@@ -58,7 +58,7 @@ public class RegistrationHandler implements UpdateHandler {
                 checkBirthday(chat);
                 break;
             default:
-                // todo log error
+                log.warning("Registration handler received update he is unable to handle!");
         }
     }
 
@@ -71,11 +71,35 @@ public class RegistrationHandler implements UpdateHandler {
     private void checkPhoneCode(TgChat chat) {
     }
 
-    private void checkPhone(TgChat chat) {
+    private void checkPhone(TgChat chat, Update update) {
+        if(!update.hasMessage()) {
+            log.info("Registration handler received update, but there is no message");
+            return;
+        }
+        var message = update.getMessage().getText();
+        var phone = Phone.findPhone(message);
+        if(phone.isEmpty()) {
+            sendPhoneTip(chat.getId());
+        } else {
+
+        }
+    }
+
+    private void sendPhoneTip(Long chatId) {
+        bot.addMessage(
+                new MessageBuilder()
+                        .setChatId(chatId)
+                        .setText("Не удалось распознать номер\n" +
+                                "Подсказка: номер телефона лучше всего вводить в формате +7 ххх ххх хххх")
+        );
     }
 
     private void handleMenuOption(TgChat chat, Update update) {
-        if(!update.hasMessage()) return;
+        if(!update.hasMessage()) {
+            log.info("Registration handler received update, but there is no message");
+            return;
+        }
+
         var message = update.getMessage().getText();
         var messageLower = message.toLowerCase();
 
@@ -86,26 +110,52 @@ public class RegistrationHandler implements UpdateHandler {
                     new MessageBuilder()
                             .setChatId(chat.getId())
                             .setText("Введите ваше имя, на которое будут оформляться заказы, в ответ на это сообщение")
+                            .setReplyMarkup(getBackKeyboard())
             );
         } else if(messageLower.contains("телефон") || messageLower.contains("номер")) {
-
+            chat.setChatState(ChatState.REGISTRATION_WAIT_PHONE);
+            chatRepository.save(chat);
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Введите номер телефона в ответ на это сообщение")
+                            .setReplyMarkup(getBackKeyboard())
+            );
         } else if(messageLower.contains("дата рождения") || messageLower.contains("др")) {
-
+            chat.setChatState(ChatState.REGISTRATION_WAIT_BIRTHDAY);
+            chatRepository.save(chat);
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Введите дату рождения в ответ на это сообщение")
+                            .setReplyMarkup(getBackKeyboard())
+            );
         }
+    }
+
+    private static ReplyKeyboardMarkup getBackKeyboard() {
+        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
+        markup.setSelective(true);
+        markup.setResizeKeyboard(true);
+        markup.setOneTimeKeyboard(true);
+
+        KeyboardRow row = new KeyboardRow();
+        KeyboardButton button = new KeyboardButton("Назад");
+        row.add(button);
+
+        markup.setKeyboard(List.of(row));
+        return markup;
     }
 
     private void sendMenu(TgChat chat) {
         chat.setChatState(ChatState.REGISTRATION_MENU);
         chatRepository.save(chat);
-        bot.getSendQueue().add(getMenuMessage(chat));
-    }
-
-    private SendMessage getMenuMessage(TgChat forChat) {
-        SendMessage msg = new SendMessage();
-        msg.setChatId(forChat.getId().toString());
-        msg.setText("Для регистрации введите следующие данные. Обязательные поля отмечены *");
-        msg.setReplyMarkup(getMenuKeyboard(getRegInfo(forChat)));
-        return msg;
+        bot.addMessage(
+                new MessageBuilder()
+                        .setChatId(chat.getId())
+                        .setText("Для регистрации введите следующие данные. Обязательные поля отмечены *")
+                        .setReplyMarkup(getMenuKeyboard(getRegInfo(chat)))
+        );
     }
 
     private static ReplyKeyboardMarkup getMenuKeyboard(TgRegistration regInfo) {

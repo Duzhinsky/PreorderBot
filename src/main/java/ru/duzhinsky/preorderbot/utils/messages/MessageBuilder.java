@@ -2,6 +2,7 @@ package ru.duzhinsky.preorderbot.utils.messages;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 
 public class MessageBuilder {
     private Long chatId;
@@ -23,6 +24,13 @@ public class MessageBuilder {
 
     public MessageBuilder setReplyMarkup(ReplyKeyboard markup) {
         this.markup = markup;
+        return this;
+    }
+
+    public MessageBuilder removeKeyboard() {
+        ReplyKeyboardRemove keyboardRemove = new ReplyKeyboardRemove();
+        keyboardRemove.setRemoveKeyboard(true);
+        this.markup = keyboardRemove;
         return this;
     }
 

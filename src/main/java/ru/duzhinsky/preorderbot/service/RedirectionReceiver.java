@@ -9,7 +9,7 @@ import ru.duzhinsky.preorderbot.service.handlers.HandlersContext;
 
 @Service
 @Scope("singleton")
-public class RedirectionReceiver implements Runnable{
+public class RedirectionReceiver implements Runnable {
     private final PreorderBot bot;
     private final HandlersContext handlersContext;
 
