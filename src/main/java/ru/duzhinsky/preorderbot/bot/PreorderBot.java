@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
+import ru.duzhinsky.preorderbot.utils.messages.MessageBuilder;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -32,4 +34,7 @@ public class PreorderBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         receiveQueue.add(update);
     }
+
+    public void addMessage(SendMessage msg) { sendQueue.add(msg); }
+    public void addMessage(MessageBuilder builder) { sendQueue.add(builder.build()); }
 }

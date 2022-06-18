@@ -26,7 +26,7 @@ public class MessageBuilder {
         return this;
     }
 
-    SendMessage build() {
+    public SendMessage build() {
         if(chatId == null || text == null) throw new MessageBuildingException();
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());

@@ -15,6 +15,7 @@ import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistrati
 import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistrationRepository;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
+import ru.duzhinsky.preorderbot.utils.messages.MessageBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +81,12 @@ public class RegistrationHandler implements UpdateHandler {
 
         if(messageLower.contains("имя")) {
             chat.setChatState(ChatState.REGISTRATION_WAIT_NAME);
-
+            chatRepository.save(chat);
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Введите ваше имя, на которое будут оформляться заказы, в ответ на это сообщение")
+            );
         } else if(messageLower.contains("телефон") || messageLower.contains("номер")) {
 
         } else if(messageLower.contains("дата рождения") || messageLower.contains("др")) {
