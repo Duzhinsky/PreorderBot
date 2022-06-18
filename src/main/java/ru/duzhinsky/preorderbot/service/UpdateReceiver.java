@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.duzhinsky.preorderbot.bot.PreorderBot;
-import ru.duzhinsky.preorderbot.bot.TelegramUtils;
+import ru.duzhinsky.preorderbot.utils.TelegramUtils;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.HandlersContext;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;

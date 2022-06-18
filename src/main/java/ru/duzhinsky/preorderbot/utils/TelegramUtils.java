@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.bot;
+package ru.duzhinsky.preorderbot.utils;
 
 import org.telegram.telegrambots.meta.api.objects.Update;
 
