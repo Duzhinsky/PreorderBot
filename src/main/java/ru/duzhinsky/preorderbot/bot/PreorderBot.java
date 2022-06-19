@@ -36,5 +36,5 @@ public class PreorderBot extends TelegramLongPollingBot {
     }
 
     public void addMessage(SendMessage msg) { sendQueue.add(msg); }
-    public void addMessage(MessageBuilder builder) { sendQueue.add(builder.build()); }
+    public void addMessage(MessageBuilder builder) { addMessage(builder.build()); }
 }

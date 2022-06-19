@@ -12,8 +12,10 @@ import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChat;
 import ru.duzhinsky.preorderbot.persistence.entities.tgchat.TgChatRepository;
 import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistration;
 import ru.duzhinsky.preorderbot.persistence.entities.tgregistration.TgRegistrationRepository;
+import ru.duzhinsky.preorderbot.service.ValidationCodeService;
 import ru.duzhinsky.preorderbot.service.handlers.ChatState;
 import ru.duzhinsky.preorderbot.service.handlers.UpdateHandler;
+import ru.duzhinsky.preorderbot.service.sms.SmsStatus;
 import ru.duzhinsky.preorderbot.utils.Phone;
 import ru.duzhinsky.preorderbot.utils.messages.MessageBuilder;
 
@@ -26,12 +28,14 @@ public class RegistrationHandler implements UpdateHandler {
     private final TgRegistrationRepository registrationRepository;
     private final TgChatRepository chatRepository;
     private final PreorderBot bot;
+    private final ValidationCodeService validationCodeService;
 
     @Autowired
-    public RegistrationHandler(TgRegistrationRepository registrationRepository, TgChatRepository chatRepository, PreorderBot bot) {
+    public RegistrationHandler(TgRegistrationRepository registrationRepository, TgChatRepository chatRepository, PreorderBot bot, ValidationCodeService validationCodeService) {
         this.registrationRepository = registrationRepository;
         this.chatRepository = chatRepository;
         this.bot = bot;
+        this.validationCodeService = validationCodeService;
     }
 
     @Override
@@ -52,7 +56,7 @@ public class RegistrationHandler implements UpdateHandler {
                 checkPhone(chat, update);
                 break;
             case REGISTRATION_WAIT_CODE:
-                checkPhoneCode(chat);
+                checkPhoneCode(chat, update);
                 break;
             case REGISTRATION_WAIT_BIRTHDAY:
                 checkBirthday(chat);
@@ -68,7 +72,50 @@ public class RegistrationHandler implements UpdateHandler {
     private void checkBirthday(TgChat chat) {
     }
 
-    private void checkPhoneCode(TgChat chat) {
+    private void checkPhoneCode(TgChat chat, Update update) {
+        if(!update.hasMessage()) return;
+        var message = update.getMessage().getText();
+        if(message.equals("Назад")) {
+            chat.setChatState(ChatState.REGISTRATION);
+            chatRepository.save(chat);
+            bot.getRedirectionQueue().add(chat);
+            return;
+        }
+        var codeString = message.replaceAll("[^\\d]", "");
+        try {
+            Integer inputCode = Integer.parseInt(codeString);
+            Integer code = validationCodeService.getValidationCode(chat);
+            if(inputCode.equals(code)) {
+                writePhone(chat);
+            } else {
+                bot.addMessage(
+                        new MessageBuilder()
+                                .setChatId(chat.getId())
+                                .setText("Неверный код! Попробуйте еще раз!")
+                                .setReplyMarkup(getBackKeyboard())
+                );
+            }
+        } catch(NumberFormatException e) {
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Неверный формат кода! Попробуйте еще раз!")
+                            .setReplyMarkup(getBackKeyboard())
+            );
+        }
+    }
+
+    private void writePhone(TgChat chat) {
+        var tgRegistration = chat.getRegInfo();
+        tgRegistration.setPhone(validationCodeService.getValidationPhone(chat));
+        chat.setChatState(ChatState.REGISTRATION);
+        chatRepository.save(chat);
+        bot.addMessage(
+                   new MessageBuilder()
+                           .setChatId(chat.getId())
+                           .setText("Номер телефона был успешно записан!")
+        );
+        bot.getRedirectionQueue().add(chat);
     }
 
     private void checkPhone(TgChat chat, Update update) {
@@ -77,11 +124,42 @@ public class RegistrationHandler implements UpdateHandler {
             return;
         }
         var message = update.getMessage().getText();
+        if(message.equals("Назад")) {
+            chat.setChatState(ChatState.REGISTRATION);
+            chatRepository.save(chat);
+            bot.getRedirectionQueue().add(chat);
+            return;
+        }
         var phone = Phone.findPhone(message);
         if(phone.isEmpty()) {
             sendPhoneTip(chat.getId());
         } else {
+            validationCodeService.generate(chat, phone.get().getPhone(), status -> smsCallback(chat, status));
+        }
+    }
 
+    private void smsCallback(TgChat chat, SmsStatus status) {
+        if(status == SmsStatus.ERROR) {
+            log.warning(String.format("An error occurred while sending a message to the chat %d", chat.getId()));
+            chat.setChatState(ChatState.REGISTRATION);
+            chatRepository.save(chat);
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Произошла ошибка при отправке кода подтверждения. Попробуйте позже")
+                            .removeKeyboard()
+            );
+            bot.getRedirectionQueue().add(chat);
+        } else if(status == SmsStatus.DELIVERED) {
+            log.warning(String.format("SMS to the chat %d was delivered successful", chat.getId()));
+            chat.setChatState(ChatState.REGISTRATION_WAIT_CODE);
+            chatRepository.save(chat);
+            bot.addMessage(
+                    new MessageBuilder()
+                            .setChatId(chat.getId())
+                            .setText("Код подтверждения был отправлен по вашему номеру телефона. Введите его в ответ на это сообщение.")
+                            .setReplyMarkup(getBackKeyboard())
+            );
         }
     }
 

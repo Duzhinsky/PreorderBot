@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.service;
+package ru.duzhinsky.preorderbot.service.bot;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;

@@ -1,4 +1,4 @@
-package ru.duzhinsky.preorderbot.service;
+package ru.duzhinsky.preorderbot.service.bot;
 
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;

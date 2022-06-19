@@ -47,16 +47,7 @@ public class LoginHandler implements UpdateHandler {
         } else if(state == ChatState.LOGIN_WAIT_PHONE) {
             checkPhone(chat, update);
         } else if(state == ChatState.LOGIN_WAIT_CODE) {
-            if(update == null) return;
-            if(!update.hasMessage()) return;
-            String message = update.getMessage().getText();
-            if(message.equals("Назад")) {
-                chat.setChatState(ChatState.LOGIN);
-                tgChatRepository.save(chat);
-                preorderBot.getRedirectionQueue().add(chat);
-            } else {
-                checkCode(chat, message);
-            }
+            checkCode(chat, update);
         }
     }
 
@@ -72,7 +63,15 @@ public class LoginHandler implements UpdateHandler {
         }
     }
 
-    private void checkCode(TgChat chat, String message) {
+    private void checkCode(TgChat chat, Update update) {
+        if(!update.hasMessage()) return;
+        var message = update.getMessage().getText();
+        if(message.equals("Назад")) {
+            chat.setChatState(ChatState.LOGIN);
+            tgChatRepository.save(chat);
+            preorderBot.getRedirectionQueue().add(chat);
+            return;
+        }
         var codeString = message.replaceAll("[^\\d]", "");
         try {
             Integer inputCode = Integer.parseInt(codeString);
@@ -119,6 +118,7 @@ public class LoginHandler implements UpdateHandler {
                                     .setText("Произошла ошибка! Пользователь с таким номером не найден.")
                                     .removeKeyboard()
                     );
+                    preorderBot.getRedirectionQueue().add(chat);
                 }
         );
     }
